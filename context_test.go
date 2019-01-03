@@ -624,6 +624,16 @@ func TestContextRenderPanicIfErr(t *testing.T) {
 	assert.Fail(t, "Panic not detected")
 }
 
+func TestServeError(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.ServeError(http.StatusInternalServerError, []byte("Internal Server Error"))
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "Internal Server Error", w.Body.String())
+}
+
 // Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
 // and special HTML characters are escaped
