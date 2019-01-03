@@ -3,13 +3,17 @@ package flow
 import "github.com/go-flow/flow/config"
 
 const (
-	defaultEnv                   = "development"
-	defaultName                  = "FlowApp"
-	defaultAddr                  = "0.0.0.0:3000"
-	defaultLogLevel              = "debug"
-	defaultRedirectTrailingSlash = true
-	defaultRedirectFixedPath     = false
-	defaultMultipartMemory       = 32 << 20 // 32 MB
+	defaultEnv                    = "development"
+	defaultName                   = "FlowApp"
+	defaultAddr                   = "0.0.0.0:3000"
+	defaultLogLevel               = "debug"
+	defaultRedirectTrailingSlash  = true
+	defaultRedirectFixedPath      = false
+	defaultHandleMethodNotAllowed = true
+	defaultMultipartMemory        = 32 << 20 // 32 MB
+	defaultSecureJSONPrefix       = "while(1);"
+	default404Body                = "404 page not found"
+	default405Body                = "405 method not allowed"
 )
 
 // New creates new application instance
@@ -28,6 +32,12 @@ func New(configFile string) *App {
 	return NewWithConfig(cfgData)
 }
 
+// Default returns an App instance with default configuration.
+func Default() *App {
+	cfg := map[string]interface{}{}
+	return NewWithConfig(cfg)
+}
+
 // NewWithConfig creates new application instance
 // with given configuration object
 func NewWithConfig(data map[string]interface{}) *App {
@@ -35,13 +45,21 @@ func NewWithConfig(data map[string]interface{}) *App {
 	// ensure we have minimum configuration set
 	configWithDefaults(data)
 
+	//create configuration object
 	cfg := NewConfig(data)
 
-	r := NewMux()
-	r.RedirectTrailingSlash = cfg.GetBool("redirectTrailingSlash")
-	r.RedirectFixedPath = cfg.GetBool("redirectFixedPath")
+	// create application router
+	r := NewRouter()
 
-	return nil
+	app := &App{
+		config: cfg,
+		router: r,
+	}
+	app.pool.New = func() interface{} {
+		return app.allocateContext()
+	}
+
+	return app
 }
 
 func configWithDefaults(data map[string]interface{}) {
@@ -78,6 +96,22 @@ func configWithDefaults(data map[string]interface{}) {
 	// ensure we have maxMultipartMemory set
 	if _, found := data["maxMultipartMemory"]; !found {
 		data["maxMultipartMemory"] = defaultMultipartMemory
+	}
+
+	if _, found := data["secureJSONPrefix"]; !found {
+		data["secureJSONPrefix"] = defaultSecureJSONPrefix
+	}
+
+	if _, found := data["handleMethodNotAllowed"]; !found {
+		data["handleMethodNotAllowed"] = defaultHandleMethodNotAllowed
+	}
+
+	if _, found := data["404Body"]; !found {
+		data["404Body"] = default404Body
+	}
+
+	if _, found := data["405Body"]; !found {
+		data["405Body"] = default405Body
 	}
 
 }
