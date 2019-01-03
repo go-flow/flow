@@ -46,7 +46,7 @@ var _ Router = NewMux()
 func NewMux() *Mux {
 	return &Mux{
 		RedirectTrailingSlash: true,
-		RedirectFixedPath:     true,
+		RedirectFixedPath:     false,
 	}
 }
 

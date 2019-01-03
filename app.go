@@ -4,7 +4,7 @@ import "sync"
 
 // App -
 type App struct {
-	Options
+	config *Config
 	router *Router
 	pool   sync.Pool
 }
