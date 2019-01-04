@@ -8,7 +8,7 @@ import (
 
 // CreateTestContext returns a fresh engine and context for testing purposes
 func CreateTestContext(w http.ResponseWriter) (c *Context, r *App) {
-	r = Default()
+	r = New()
 	c = r.allocateContext()
 	c.reset()
 	c.writermem.reset(w)

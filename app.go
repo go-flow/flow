@@ -1,22 +1,45 @@
 package flow
 
 import (
-	"html/template"
 	"net/http"
 	"sync"
-
-	"github.com/go-flow/flow/render"
 )
+
+// New returns an App instance with default configuration.
+func New() *App {
+	cfg := map[string]interface{}{}
+	return NewWithConfig(cfg)
+}
+
+// NewWithConfig creates new application instance
+// with given configuration object
+func NewWithConfig(data map[string]interface{}) *App {
+
+	opts := NewOptions(data)
+
+	// create application router
+	r := NewRouter()
+
+	app := &App{
+		Options: opts,
+		router:  r,
+	}
+	app.pool.New = func() interface{} {
+		return app.allocateContext()
+	}
+
+	return app
+}
 
 // App -
 type App struct {
-	config *Config
-	router *Router
-	pool   sync.Pool
+	Options
 
-	delims     render.Delims
-	HTMLRender render.HTMLRender
-	FuncMap    template.FuncMap
+	router *Router
+	//logger
+	//sessions
+	//render engine
+	pool sync.Pool
 }
 
 // ServeHTTP conforms to the http.Handler interface.
@@ -38,39 +61,6 @@ func (a *App) HandleContext(c *Context) {
 	a.handleHTTPRequest(c)
 }
 
-// Delims sets template left and right delims and returns a Engine instance.
-func (a *App) Delims(left, right string) {
-	a.delims = render.Delims{Left: left, Right: right}
-}
-
-// LoadHTMLGlob loads HTML files identified by glob pattern
-// and associates the result with HTML renderer.
-func (a *App) LoadHTMLGlob(pattern string) {
-	left := a.delims.Left
-	right := a.delims.Right
-	templ := template.Must(template.New("").Delims(left, right).Funcs(a.FuncMap).ParseGlob(pattern))
-
-	a.SetHTMLTemplate(templ)
-}
-
-// LoadHTMLFiles loads a slice of HTML files
-// and associates the result with HTML renderer.
-func (a *App) LoadHTMLFiles(files ...string) {
-
-	templ := template.Must(template.New("").Delims(a.delims.Left, a.delims.Right).Funcs(a.FuncMap).ParseFiles(files...))
-	a.SetHTMLTemplate(templ)
-}
-
-// SetHTMLTemplate associate a template with HTML renderer.
-func (a *App) SetHTMLTemplate(templ *template.Template) {
-	a.HTMLRender = render.HTMLProduction{Template: templ.Funcs(a.FuncMap)}
-}
-
-// SetFuncMap sets the FuncMap used for template.FuncMap.
-func (a *App) SetFuncMap(funcMap template.FuncMap) {
-	a.FuncMap = funcMap
-}
-
 func (a *App) handleHTTPRequest(c *Context) {
 	req := c.Request
 	httpMethod := req.Method
@@ -84,28 +74,27 @@ func (a *App) handleHTTPRequest(c *Context) {
 			c.writermem.WriteHeaderNow()
 			return
 		} else if httpMethod != "CONNECT" && path != "/" {
-			redirectTS := a.config.GetBool("redirectTrailingSlash")
-			redirectFP := a.config.GetBool("redirectFixedPath")
 			code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 			if httpMethod != "GET" {
 				code = http.StatusTemporaryRedirect
 			}
-			if tsr && redirectTS {
+			if tsr && a.RedirectTrailingSlash {
 				req.URL.Path = path + "/"
 				if length := len(path); length > 1 && path[length-1] == '/' {
 					req.URL.Path = path[:length-1]
 				}
 				// logger here
-				http.Redirect(c.Writer, req, req.URL.String(), code)
+				http.Redirect(c.Response, req, req.URL.String(), code)
 				c.writermem.WriteHeaderNow()
 				return
 			}
 
-			if redirectFP {
-				fixedPath, found := root.findCaseInsensitivePath(CleanPath(path), redirectTS)
+			if a.RedirectFixedPath {
+				fixedPath, found := root.findCaseInsensitivePath(CleanPath(path), a.RedirectTrailingSlash)
 				if found {
 					req.URL.Path = string(fixedPath)
-					http.Redirect(c.Writer, req, req.URL.String(), code)
+					// logger here
+					http.Redirect(c.Response, req, req.URL.String(), code)
 					c.writermem.WriteHeaderNow()
 					return
 				}
@@ -113,16 +102,16 @@ func (a *App) handleHTTPRequest(c *Context) {
 		}
 	}
 
-	if a.config.GetBool("handleMethodNotAllowed") {
+	if a.HandleMethodNotAllowed {
 		if allow := a.router.allowed(path, httpMethod); len(allow) > 0 {
 			c.handlers = a.router.Middlewares
-			c.ServeError(http.StatusMethodNotAllowed, []byte(a.config.GetString("405Body")))
+			c.ServeError(http.StatusMethodNotAllowed, []byte(a.AppConfig.GetStringD("405Body", default405Body)))
 			return
 		}
 	}
 
 	c.handlers = a.router.Middlewares
-	c.ServeError(http.StatusNotFound, []byte(a.config.GetString("404Body")))
+	c.ServeError(http.StatusNotFound, []byte(a.AppConfig.GetStringD("404Body", default404Body)))
 }
 
 func (a *App) allocateContext() *Context {

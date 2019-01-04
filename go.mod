@@ -2,6 +2,7 @@ module github.com/go-flow/flow
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/gin-gonic/gin v1.3.0
 	github.com/golang/protobuf v1.2.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.2.2

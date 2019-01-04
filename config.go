@@ -1,8 +1,8 @@
 package flow
 
 // NewConfig creates new Configuration object for a given config data
-func NewConfig(data map[string]interface{}) *Config {
-	return &Config{
+func NewConfig(data map[string]interface{}) Config {
+	return Config{
 		data,
 	}
 }
