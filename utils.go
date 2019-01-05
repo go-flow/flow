@@ -21,10 +21,11 @@ func iterate(path, method string, routes Routes, root *node) Routes {
 	if len(root.handler) > 0 {
 		handlerFunc := root.handler.Last()
 		routes = append(routes, Route{
-			Method:      method,
-			Path:        path,
-			Handler:     nameOfFunction(handlerFunc),
-			HandlerFunc: handlerFunc,
+			Method:        method,
+			Path:          path,
+			HandlersChain: root.handler,
+			HandlerName:   nameOfFunction(handlerFunc),
+			HandlerFunc:   handlerFunc,
 		})
 	}
 	for _, child := range root.children {
