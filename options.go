@@ -59,6 +59,7 @@ type Options struct {
 	// method call.
 	MaxMultipartMemory int64
 
+	// Application speccific configuration object
 	AppConfig Config
 }
 

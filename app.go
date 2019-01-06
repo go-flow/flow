@@ -34,6 +34,7 @@ func NewWithConfig(data map[string]interface{}) *App {
 		Logger:  logger,
 		router:  r,
 	}
+
 	app.pool.New = func() interface{} {
 		return app.allocateContext()
 	}
@@ -99,12 +100,19 @@ func (a *App) Serve() error {
 
 // ServeHTTP conforms to the http.Handler interface.
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// get context from pool
 	c := a.pool.Get().(*Context)
+	// reset response writer
 	c.writermem.reset(w)
+	// set request
 	c.Request = r
+	// reset context from previous use
 	c.reset()
 
+	// handle the request
 	a.handleHTTPRequest(c)
+
+	// put back context to pool
 	a.pool.Put(c)
 }
 

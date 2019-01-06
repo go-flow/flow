@@ -513,19 +513,6 @@ func (c *Context) requestHeader(key string) string {
 /******** RESPONSE RENDERING ********/
 /************************************/
 
-// bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function.
-func bodyAllowedForStatus(status int) bool {
-	switch {
-	case status >= 100 && status <= 199:
-		return false
-	case status == http.StatusNoContent:
-		return false
-	case status == http.StatusNotModified:
-		return false
-	}
-	return true
-}
-
 // Status sets the HTTP response code.
 func (c *Context) Status(code int) {
 	c.Response.WriteHeader(code)
@@ -604,11 +591,6 @@ func (c *Context) Stream(step func(w io.Writer) bool) {
 			}
 		}
 	}
-}
-
-// SetAccepted sets Accept header data.
-func (c *Context) SetAccepted(formats ...string) {
-	c.Accepted = formats
 }
 
 // Value returns the value associated with this context for key, or nil
