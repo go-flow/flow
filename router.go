@@ -73,7 +73,7 @@ func (r *Router) DELETE(path string, handle HandlerFunc) {
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (r *Router) Handle(method, path string, handle HandlerFunc) {
+func (r *Router) Handle(method, path string, handlers ...HandlerFunc) {
 	if path[0] != '/' {
 		panic("path must begin with '/' in path '" + path + "'")
 	}
@@ -88,7 +88,7 @@ func (r *Router) Handle(method, path string, handle HandlerFunc) {
 		r.trees[method] = root
 	}
 
-	chained := r.prepareChainHandler(handle)
+	chained := r.prepareChainHandler(handlers)
 
 	root.addRoute(path, chained)
 }
@@ -114,14 +114,14 @@ func (r *Router) Routes() (routes Routes) {
 	return routes
 }
 
-func (r *Router) prepareChainHandler(handler HandlerFunc) HandlersChain {
-	finalSize := len(r.Middlewares) + 1
+func (r *Router) prepareChainHandler(handlers HandlersChain) HandlersChain {
+	finalSize := len(r.Middlewares) + len(handlers)
 	if finalSize >= int(abortIndex) {
 		panic("too many handlers")
 	}
 	mergedHandlers := make(HandlersChain, finalSize)
 	copy(mergedHandlers, r.Middlewares)
-	mergedHandlers = append(mergedHandlers, handler)
+	copy(mergedHandlers[len(r.Middlewares):], handlers)
 	return mergedHandlers
 }
 

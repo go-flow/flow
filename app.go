@@ -54,6 +54,46 @@ type App struct {
 	pool sync.Pool
 }
 
+// Use appends one or more middlewares onto the Router stack.
+func (a *App) Use(middleware ...HandlerFunc) {
+	a.router.Use(middleware...)
+}
+
+// GET is a shortcut for router.Handle("GET", path, handle)
+func (a *App) GET(path string, handler HandlerFunc) {
+	a.router.GET(path, handler)
+}
+
+// HEAD is a shortcut for router.Handle("HEAD", path, handle)
+func (a *App) HEAD(path string, handler HandlerFunc) {
+	a.router.HEAD(path, handler)
+}
+
+// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
+func (a *App) OPTIONS(path string, handler HandlerFunc) {
+	a.router.OPTIONS(path, handler)
+}
+
+// POST is a shortcut for router.Handle("POST", path, handle)
+func (a *App) POST(path string, handler HandlerFunc) {
+	a.router.POST(path, handler)
+}
+
+// PUT is a shortcut for router.Handle("PUT", path, handle)
+func (a *App) PUT(path string, handler HandlerFunc) {
+	a.router.PUT(path, handler)
+}
+
+// PATCH is a shortcut for router.Handle("PATCH", path, handle)
+func (a *App) PATCH(path string, handler HandlerFunc) {
+	a.router.PATCH(path, handler)
+}
+
+// DELETE is a shortcut for router.Handle("DELETE", path, handle)
+func (a *App) DELETE(path string, handler HandlerFunc) {
+	a.router.DELETE(path, handler)
+}
+
 // Serve the application at the specified address/port and listen for OS
 // interrupt and kill signals and will attempt to stop the application
 // gracefully.

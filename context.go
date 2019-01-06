@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/go-flow/flow/binding"
 )
 
 // Context is request scoped application context
@@ -113,6 +115,15 @@ func (c *Context) AbortWithStatus(code int) {
 func (c *Context) AbortWithError(code int, err error) *Error {
 	c.AbortWithStatus(code)
 	return c.Error(err)
+}
+
+/************************************/
+/*********  APP MANAGEMENT  *********/
+/************************************/
+
+// Logger gets application Logger instance
+func (c *Context) Logger() Logger {
+	return c.app.Logger
 }
 
 /************************************/
@@ -463,6 +474,108 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dest string) erro
 
 	io.Copy(out, src)
 	return nil
+}
+
+// Bind checks the Content-Type to select a binding engine automatically,
+// Depending the "Content-Type" header different bindings are used:
+//     "application/json" --> JSON binding
+//     "application/xml"  --> XML binding
+// otherwise --> returns an error.
+// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
+// It decodes the json payload into the struct specified as a pointer.
+// It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
+func (c *Context) Bind(obj interface{}) error {
+	b := binding.Default(c.Request.Method, c.ContentType())
+	return c.MustBindWith(obj, b)
+}
+
+// BindJSON is a shortcut for c.MustBindWith(obj, binding.JSON).
+func (c *Context) BindJSON(obj interface{}) error {
+	return c.MustBindWith(obj, binding.JSON)
+}
+
+// BindXML is a shortcut for c.MustBindWith(obj, binding.BindXML).
+func (c *Context) BindXML(obj interface{}) error {
+	return c.MustBindWith(obj, binding.XML)
+}
+
+// BindQuery is a shortcut for c.MustBindWith(obj, binding.Query).
+func (c *Context) BindQuery(obj interface{}) error {
+	return c.MustBindWith(obj, binding.Query)
+}
+
+// BindYAML is a shortcut for c.MustBindWith(obj, binding.YAML).
+func (c *Context) BindYAML(obj interface{}) error {
+	return c.MustBindWith(obj, binding.YAML)
+}
+
+// BindURI binds the passed struct pointer using binding.Uri.
+// It will abort the request with HTTP 400 if any error occurs.
+func (c *Context) BindURI(obj interface{}) error {
+	if err := c.ShouldBindURI(obj); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		return err
+	}
+	return nil
+}
+
+// MustBindWith binds the passed struct pointer using the specified binding engine.
+// It will abort the request with HTTP 400 if any error occurs.
+// See the binding package.
+func (c *Context) MustBindWith(obj interface{}, b binding.Binder) error {
+	if err := c.ShouldBindWith(obj, b); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		return err
+	}
+	return nil
+}
+
+// ShouldBind checks the Content-Type to select a binding engine automatically,
+// Depending the "Content-Type" header different bindings are used:
+//     "application/json" --> JSON binding
+//     "application/xml"  --> XML binding
+// otherwise --> returns an error
+// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
+// It decodes the json payload into the struct specified as a pointer.
+// Like c.Bind() but this method does not set the response status code to 400 and abort if the json is not valid.
+func (c *Context) ShouldBind(obj interface{}) error {
+	b := binding.Default(c.Request.Method, c.ContentType())
+	return c.ShouldBindWith(obj, b)
+}
+
+// ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
+func (c *Context) ShouldBindJSON(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.JSON)
+}
+
+// ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
+func (c *Context) ShouldBindXML(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.XML)
+}
+
+// ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
+func (c *Context) ShouldBindQuery(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.Query)
+}
+
+// ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
+func (c *Context) ShouldBindYAML(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.YAML)
+}
+
+// ShouldBindURI binds the passed struct pointer using the specified binding engine.
+func (c *Context) ShouldBindURI(obj interface{}) error {
+	m := make(map[string][]string)
+	for _, v := range c.Params {
+		m[v.Key] = []string{v.Value}
+	}
+	return binding.URI.BindURI(m, obj)
+}
+
+// ShouldBindWith binds the passed struct pointer using the specified binding engine.
+// See the binding package.
+func (c *Context) ShouldBindWith(obj interface{}, b binding.Binder) error {
+	return b.Bind(c.Request, obj)
 }
 
 // ClientIP implements a best effort algorithm to return the real client IP, it parses
