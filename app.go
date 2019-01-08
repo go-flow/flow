@@ -45,8 +45,7 @@ func NewWithConfig(data map[string]interface{}) *App {
 // App -
 type App struct {
 	Options
-	Logger Logger
-
+	Logger *Logger
 	router *Router
 
 	//sessions

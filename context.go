@@ -122,7 +122,7 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 /************************************/
 
 // Logger gets application Logger instance
-func (c *Context) Logger() Logger {
+func (c *Context) Logger() *Logger {
 	return c.app.Logger
 }
 
