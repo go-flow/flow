@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/go-flow/flow/sessions"
 )
 
 // New returns an App instance with default configuration.
@@ -45,9 +47,9 @@ func NewWithConfig(data map[string]interface{}) *App {
 // App -
 type App struct {
 	Options
-	Logger *Logger
-	router *Router
-
+	Logger      *Logger
+	router      *Router
+	sesionStore sessions.Store
 	//sessions
 	//render engine
 	pool sync.Pool
