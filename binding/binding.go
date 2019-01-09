@@ -11,7 +11,6 @@ const (
 	MIMEPlain             = "text/plain"
 	MIMEPOSTForm          = "application/x-www-form-urlencoded"
 	MIMEMultipartPOSTForm = "multipart/form-data"
-	MIMEYAML              = "application/x-yaml"
 )
 
 // Binder defines interface which needs to be implemented for request data binding
@@ -40,7 +39,6 @@ var (
 	Query         = queryBinding{}
 	FormPost      = formPostBinding{}
 	FormMultipart = formMultipartBinding{}
-	YAML          = yamlBinding{}
 	URI           = uriBinding{}
 )
 
@@ -56,8 +54,6 @@ func Default(method, contentType string) Binder {
 		return JSON
 	case MIMEXML, MIMEXML2:
 		return XML
-	case MIMEYAML:
-		return YAML
 	default: //case MIMEPOSTForm, MIMEMultipartPOSTForm:
 		return Form
 	}
