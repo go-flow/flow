@@ -1,5 +1,7 @@
 package flow
 
+import "github.com/go-flow/flow/sessions"
+
 const (
 	defaultEnv                    = "development"
 	defaultName                   = "FlowApp"
@@ -28,6 +30,15 @@ type Options struct {
 
 	// LogLevel defaults to "debug".
 	LogLevel string
+
+	// Logger to be used with the application. A default one is provided.
+	Logger Logger
+
+	// SessionStore is used to back the session.
+	SesionStore sessions.Store
+
+	// SessionName is the name of the session cookie that is set.
+	SessionName string
 
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
