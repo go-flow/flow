@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -94,6 +95,97 @@ func TestRouterGroupBadMethod(t *testing.T) {
 	assert.Panics(t, func() {
 		router.Handle("PATCh", "/")
 	})
+}
+
+func TestRouterMiddlewareGeneralCase(t *testing.T) {
+	signature := ""
+	router := New()
+	router.Use(func(c *Context) {
+		signature += "A"
+		c.Next()
+		signature += "D"
+	})
+	router.Use(func(c *Context) {
+		signature += "B"
+	})
+	router.GET("/", func(c *Context) {
+		signature += "C"
+	})
+	// RUN
+	w := performRequest(router, "GET", "/")
+
+	// TEST
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "ABCD", signature)
+}
+
+func TestRouterMiddlewareAbort(t *testing.T) {
+	signature := ""
+	router := New()
+	router.Use(func(c *Context) {
+		signature += "A"
+	})
+	router.Use(func(c *Context) {
+		signature += "C"
+		c.AbortWithStatus(http.StatusUnauthorized)
+		c.Next()
+		signature += "D"
+	})
+	router.GET("/", func(c *Context) {
+		signature += " X "
+		c.Next()
+		signature += " XX "
+	})
+
+	// RUN
+	w := performRequest(router, "GET", "/")
+
+	// TEST
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Equal(t, "ACD", signature)
+}
+
+func TestRouterMiddlewareAbortHandlersChainAndNext(t *testing.T) {
+	signature := ""
+	router := New()
+	router.Use(func(c *Context) {
+		signature += "A"
+		c.Next()
+		c.AbortWithStatus(http.StatusGone)
+		signature += "B"
+
+	})
+	router.GET("/", func(c *Context) {
+		signature += "C"
+		c.Next()
+	})
+	// RUN
+	w := performRequest(router, "GET", "/")
+
+	// TEST
+	assert.Equal(t, http.StatusGone, w.Code)
+	assert.Equal(t, "ACB", signature)
+}
+
+func TestRouterMiddlewareFailHandlersChain(t *testing.T) {
+	// SETUP
+	signature := ""
+	router := New()
+	router.Use(func(context *Context) {
+		signature += "A"
+		context.AbortWithError(http.StatusInternalServerError, errors.New("foo"))
+	})
+	router.Use(func(context *Context) {
+		signature += "B"
+		context.Next()
+		signature += "C"
+	})
+	// RUN
+	w := performRequest(router, "GET", "/")
+
+	// TEST
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, "A", signature)
 }
 
 func performRequest(r http.Handler, method, path string) *httptest.ResponseRecorder {
