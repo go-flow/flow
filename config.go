@@ -1,132 +1,101 @@
 package flow
 
-// NewConfig creates new Configuration object for a given config data
-func NewConfig(data map[string]interface{}) Config {
-	return Config{
-		data,
-	}
-}
-
 // Config -
-type Config struct {
-	data map[string]interface{}
-}
+type Config map[string]interface{}
 
 // Get returns value for a given key
-func (c *Config) Get(key string) interface{} {
-	return c.GetD(key, nil)
+func (c Config) Get(key string) interface{} {
+	return c.GetDefault(key, nil)
 }
 
-// GetD returns value for a given key, if value for a given key does not exists
+// GetDefault returns value for a given key, if value for a given key does not exists
 // then defaultVal is returned
-func (c *Config) GetD(key string, defaultVal interface{}) interface{} {
-	item, found := c.data[key]
-	if !found {
-		return defaultVal
+func (c Config) GetDefault(key string, defaultVal interface{}) interface{} {
+	if data, ok := c[key]; ok {
+		return data
 	}
-	return item
+	return defaultVal
 }
 
-// GetString returns value as string for a given key
-func (c *Config) GetString(key string) string {
-	return c.GetStringD(key, "")
+// String returns value as string for a given key
+func (c Config) String(key string) string {
+	return c.StringDefault(key, "")
 }
 
-// GetStringD returns value as string for a given key,
+// StringDefault returns value as string for a given key,
 // if value for a given key does not exists
 // then defaultVal is returned
-func (c *Config) GetStringD(key string, defaultVal string) string {
-	item, found := c.data[key]
-	if !found {
-		return defaultVal
+func (c Config) StringDefault(key, defaultVal string) string {
+	if val, ok := c.GetDefault(key, defaultVal).(string); ok {
+		return val
 	}
-	return item.(string)
+	return defaultVal
 }
 
-// GetInt returns value as int for a given key,
+// Int returns value as int for a given key,
 // if value is not found or if value can not be converted to int
 // function will return 0 value
-func (c *Config) GetInt(key string) int {
-	return c.GetIntD(key, 0)
+func (c Config) Int(key string) int {
+	return c.IntDefault(key, 0)
 }
 
-// GetIntD returns value as int for a given key,
+// IntDefault returns value as int for a given key,
 // if value is not found or if value can not be converted to int
 // function will return defaultValue value
-func (c *Config) GetIntD(key string, defaultValue int) int {
-	item, found := c.data[key]
-	if !found {
-		return defaultValue
+func (c Config) IntDefault(key string, defaultVal int) int {
+	if val, ok := c.GetDefault(key, defaultVal).(int); ok {
+		return val
 	}
-	v, ok := item.(int)
-	if !ok {
-		return defaultValue
-	}
-	return v
+	return defaultVal
 }
 
-// GetInt32 returns value as int for a given key,
-// if value is not found or if value can not be converted to int
+// Int32 returns value as int for a given key,
+// if value is not found or if value can not be converted to int32
 // function will return 0 value
-func (c *Config) GetInt32(key string) int32 {
-	return c.GetInt32D(key, 0)
+func (c Config) Int32(key string) int32 {
+	return c.Int32Default(key, 0)
 }
 
-// GetInt32D returns value as int for a given key,
+// Int32Default returns value as int for a given key,
 // if value is not found or if value can not be converted to int
 // function will return defaultValue value
-func (c *Config) GetInt32D(key string, defaultValue int32) int32 {
-	item, found := c.data[key]
-	if !found {
-		return defaultValue
+func (c Config) Int32Default(key string, defaultVal int32) int32 {
+	if val, ok := c.GetDefault(key, defaultVal).(int32); ok {
+		return val
 	}
-	v, ok := item.(int32)
-	if !ok {
-		return defaultValue
-	}
-	return v
+	return defaultVal
 }
 
-// GetInt64 returns value as int for a given key,
-// if value is not found or if value can not be converted to int
+// Int64 returns value as int for a given key,
+// if value is not found or if value can not be converted to int64
 // function will return 0 value
-func (c *Config) GetInt64(key string) int64 {
-	return c.GetInt64D(key, 0)
+func (c Config) Int64(key string) int64 {
+	return c.Int64Default(key, 0)
 }
 
-// GetInt64D returns value as int for a given key,
+// Int64Default returns value as int for a given key,
 // if value is not found or if value can not be converted to int
 // function will return defaultValue value
-func (c *Config) GetInt64D(key string, defaultValue int64) int64 {
-	item, found := c.data[key]
-	if !found {
-		return defaultValue
+func (c Config) Int64Default(key string, defaultVal int64) int64 {
+	if val, ok := c.GetDefault(key, defaultVal).(int64); ok {
+		return val
 	}
-	v, ok := item.(int64)
-	if !ok {
-		return defaultValue
-	}
-	return v
+	return defaultVal
 }
 
-// GetBool returns value as bool for a given key,
+// Bool returns value as bool for a given key,
 // if value is not found or if value can not be converted to bool
 // function will return false
-func (c *Config) GetBool(key string) bool {
-	return c.GetBoolD(key, false)
+func (c Config) Bool(key string) bool {
+	return c.BoolDefault(key, false)
 }
 
-// GetBoolD returns value as bool for a given key,
+// BoolDefault returns value as bool for a given key,
 // if value is not found or if value can not be converted to bool
 // function will return defaultValue value
-func (c *Config) GetBoolD(key string, defaultValue bool) bool {
-	item, found := c.data[key]
-	if !found {
-		return defaultValue
+func (c Config) BoolDefault(key string, defaultVal bool) bool {
+	if val, ok := c.GetDefault(key, defaultVal).(bool); ok {
+		return val
 	}
-	v, ok := item.(bool)
-	if !ok {
-		return defaultValue
-	}
-	return v
+	return defaultVal
 }

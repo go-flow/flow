@@ -75,36 +75,35 @@ type Options struct {
 }
 
 // NewOptions returns a new Options instance with sensible defaults
-func NewOptions(data map[string]interface{}) Options {
+func NewOptions(data Config) Options {
 	return optionsWithDefaults(data)
 }
 
-func optionsWithDefaults(data map[string]interface{}) Options {
+func optionsWithDefaults(cfg Config) Options {
 	opts := Options{}
-	cfg := NewConfig(data)
 
-	opts.Env = cfg.GetStringD("env", defaultEnv)
+	opts.Env = cfg.StringDefault("env", defaultEnv)
 
-	opts.Name = cfg.GetStringD("name", defaultName)
+	opts.Name = cfg.StringDefault("name", defaultName)
 
-	opts.Addr = cfg.GetStringD("addr", defaultAddr)
+	opts.Addr = cfg.StringDefault("addr", defaultAddr)
 
-	opts.LogLevel = cfg.GetStringD("logLevel", defaultLogLevel)
+	opts.LogLevel = cfg.StringDefault("logLevel", defaultLogLevel)
 
-	opts.RedirectTrailingSlash = cfg.GetBoolD("redirectTrailingSlash", defaultRedirectTrailingSlash)
+	opts.RedirectTrailingSlash = cfg.BoolDefault("redirectTrailingSlash", defaultRedirectTrailingSlash)
 
-	opts.RedirectFixedPath = cfg.GetBoolD("redirectFixedPath", defaultRedirectFixedPath)
+	opts.RedirectFixedPath = cfg.BoolDefault("redirectFixedPath", defaultRedirectFixedPath)
 
-	opts.MaxMultipartMemory = cfg.GetInt64D("maxMultipartMemory", defaultMultipartMemory)
+	opts.MaxMultipartMemory = cfg.Int64Default("maxMultipartMemory", defaultMultipartMemory)
 
-	opts.HandleMethodNotAllowed = cfg.GetBoolD("handleMethodNotAllowed", defaultHandleMethodNotAllowed)
+	opts.HandleMethodNotAllowed = cfg.BoolDefault("handleMethodNotAllowed", defaultHandleMethodNotAllowed)
 
-	if _, found := data["404Body"]; !found {
-		data["404Body"] = default404Body
+	if _, found := cfg["404Body"]; !found {
+		cfg["404Body"] = default404Body
 	}
 
-	if _, found := data["405Body"]; !found {
-		data["405Body"] = default405Body
+	if _, found := cfg["405Body"]; !found {
+		cfg["405Body"] = default405Body
 	}
 
 	opts.AppConfig = cfg

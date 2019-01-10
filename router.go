@@ -6,63 +6,62 @@ package flow
 
 import (
 	"math"
+	"net/http"
+	"path"
+	"strings"
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
 
 // Router is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
+//
+// Router is associated with a prefix and an array of handlers(middlewares)
 type Router struct {
+	// routing tree nodes
 	trees map[string]*node
 
-	// Middlewares represents list of middlewares that will be executed in chain
-	Middlewares HandlersChain
+	// Handlers represents list of middlewares that will be executed in chain
+	Handlers HandlersChain
+
+	// base path for router
+	basePath string
+
+	// root determines if the router is root router
+	root bool
 }
 
 // NewRouter returns a new initialized Router.
-// Path auto-correction, including trailing slashes, is enabled by default.
 func NewRouter() *Router {
-	return &Router{}
+	return &Router{
+		root:     true,
+		basePath: "/",
+		trees:    make(map[string]*node),
+		Handlers: nil,
+	}
+}
+
+// BasePath returns the base path of router group.
+func (r *Router) BasePath() string {
+	return r.basePath
+}
+
+// Group creates a new router group.
+//
+// You should add all the routes that have common middlewares or the same path prefix.
+// For example, all the routes that use a common middleware for authorization could be grouped.
+func (r *Router) Group(relativePath string, handlers ...HandlerFunc) *Router {
+	return &Router{
+		root:     false,
+		basePath: r.calculateAbsolutePath(relativePath),
+		trees:    r.trees,
+		Handlers: r.combineHandlers(handlers),
+	}
 }
 
 // Use appends one or more middlewares onto the Router stack.
 func (r *Router) Use(middleware ...HandlerFunc) {
-	r.Middlewares = append(r.Middlewares, middleware...)
-}
-
-// GET is a shortcut for router.Handle("GET", path, handle)
-func (r *Router) GET(path string, handle HandlerFunc) {
-	r.Handle("GET", path, handle)
-}
-
-// HEAD is a shortcut for router.Handle("HEAD", path, handle)
-func (r *Router) HEAD(path string, handle HandlerFunc) {
-	r.Handle("HEAD", path, handle)
-}
-
-// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
-func (r *Router) OPTIONS(path string, handle HandlerFunc) {
-	r.Handle("OPTIONS", path, handle)
-}
-
-// POST is a shortcut for router.Handle("POST", path, handle)
-func (r *Router) POST(path string, handle HandlerFunc) {
-	r.Handle("POST", path, handle)
-}
-
-// PUT is a shortcut for router.Handle("PUT", path, handle)
-func (r *Router) PUT(path string, handle HandlerFunc) {
-	r.Handle("PUT", path, handle)
-}
-
-// PATCH is a shortcut for router.Handle("PATCH", path, handle)
-func (r *Router) PATCH(path string, handle HandlerFunc) {
-	r.Handle("PATCH", path, handle)
-}
-
-// DELETE is a shortcut for router.Handle("DELETE", path, handle)
-func (r *Router) DELETE(path string, handle HandlerFunc) {
-	r.Handle("DELETE", path, handle)
+	r.Handlers = append(r.Handlers, middleware...)
 }
 
 // Handle registers a new request handle with the given path and method.
@@ -74,12 +73,22 @@ func (r *Router) DELETE(path string, handle HandlerFunc) {
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
 func (r *Router) Handle(method, path string, handlers ...HandlerFunc) {
+
+	path = r.calculateAbsolutePath(path)
 	if path[0] != '/' {
 		panic("path must begin with '/' in path '" + path + "'")
 	}
 
+	if method == "" {
+		panic("HTTP method can not be empty")
+	}
+
+	if len(handlers) == 0 {
+		panic("there must be at least one handler")
+	}
+
 	if r.trees == nil {
-		r.trees = make(map[string]*node)
+		panic("Router tree not initialized")
 	}
 
 	root := r.trees[method]
@@ -88,15 +97,105 @@ func (r *Router) Handle(method, path string, handlers ...HandlerFunc) {
 		r.trees[method] = root
 	}
 
-	chained := r.prepareChainHandler(handlers)
+	chained := r.combineHandlers(handlers)
 
 	root.addRoute(path, chained)
 }
 
+// GET is a shortcut for router.Handle("GET", path, handler)
+func (r *Router) GET(path string, handler HandlerFunc) {
+	r.Handle("GET", path, handler)
+}
+
+// HEAD is a shortcut for router.Handle("HEAD", path, handler)
+func (r *Router) HEAD(path string, handler HandlerFunc) {
+	r.Handle("HEAD", path, handler)
+}
+
+// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handler)
+func (r *Router) OPTIONS(path string, handler HandlerFunc) {
+	r.Handle("OPTIONS", path, handler)
+}
+
+// POST is a shortcut for router.Handle("POST", path, handler)
+func (r *Router) POST(path string, handler HandlerFunc) {
+	r.Handle("POST", path, handler)
+}
+
+// PUT is a shortcut for router.Handle("PUT", path, handler)
+func (r *Router) PUT(path string, handler HandlerFunc) {
+	r.Handle("PUT", path, handler)
+}
+
+// PATCH is a shortcut for router.Handle("PATCH", path, handler)
+func (r *Router) PATCH(path string, handler HandlerFunc) {
+	r.Handle("PATCH", path, handler)
+}
+
+// DELETE is a shortcut for router.Handle("DELETE", path, handle)
+func (r *Router) DELETE(path string, handler HandlerFunc) {
+	r.Handle("DELETE", path, handler)
+}
+
+// Any registers a route that matches all the HTTP methods.
+// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
+func (r *Router) Any(relativePath string, handler HandlerFunc) {
+	r.Handle("GET", relativePath, handler)
+	r.Handle("POST", relativePath, handler)
+	r.Handle("PUT", relativePath, handler)
+	r.Handle("PATCH", relativePath, handler)
+	r.Handle("HEAD", relativePath, handler)
+	r.Handle("OPTIONS", relativePath, handler)
+	r.Handle("DELETE", relativePath, handler)
+	r.Handle("CONNECT", relativePath, handler)
+	r.Handle("TRACE", relativePath, handler)
+}
+
+// StaticFile registers a single route in order to serve a single file of the local filesystem.
+//
+// router.StaticFile("favicon.ico", "./resources/favicon.ico")
+func (r *Router) StaticFile(relativePath, filePath string) {
+	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
+		panic("URL parameters can not be used when serving a static file")
+	}
+
+	handler := func(c *Context) {
+		c.File(filePath)
+	}
+
+	r.GET(relativePath, handler)
+	r.HEAD(relativePath, handler)
+}
+
+// StaticFS serves files from the given file system root with a custom `http.FileSystem` can be used instead.
+func (r *Router) StaticFS(relativePath string, fs http.FileSystem) {
+	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
+		panic("URL parameters can not be used when serving a static folder")
+	}
+
+	handler := r.createStaticHandler(relativePath, fs)
+	urlPattern := path.Join(relativePath, "/*filepath")
+
+	r.GET(urlPattern, handler)
+	r.HEAD(urlPattern, handler)
+}
+
+// Static serves files from the given file system root.
+//
+// Internally a http.FileServer is used, therefore http.NotFound is used instead
+// of the Router's NotFound handler.
+//
+// To use the operating system's file system implementation,
+// use :
+//     router.Static("/static", "/var/www")
+func (r *Router) Static(relativePath, root string) {
+	r.StaticFS(relativePath, Dir(root, false))
+}
+
 // Lookup allows the manual lookup of a method + path combo.
-// This is e.g. useful to build a framework around this router.
-// If the path was found, it returns the handle function and the path parameter
-// values. Otherwise the third return value indicates whether a redirection to
+//
+// If the path was found, it returns the handler chain and the path parameter
+// values. The third return value indicates whether a redirection to
 // the same path with an extra / without the trailing slash should be performed.
 func (r *Router) Lookup(method, path string) (HandlersChain, Params, bool) {
 	if root := r.trees[method]; root != nil {
@@ -105,8 +204,7 @@ func (r *Router) Lookup(method, path string) (HandlersChain, Params, bool) {
 	return nil, nil, false
 }
 
-// Routes returns a slice of registered routes, including some useful information, such as:
-// the http method, path and the handler name.
+// Routes returns a slice of registered routes
 func (r *Router) Routes() (routes Routes) {
 	for method, tree := range r.trees {
 		routes = iterate("", method, routes, tree)
@@ -114,15 +212,44 @@ func (r *Router) Routes() (routes Routes) {
 	return routes
 }
 
-func (r *Router) prepareChainHandler(handlers HandlersChain) HandlersChain {
-	finalSize := len(r.Middlewares) + len(handlers)
+func (r *Router) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc {
+	absolutePath := r.calculateAbsolutePath(relativePath)
+	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
+
+	// create handler
+	handler := func(c *Context) {
+		if _, nolisting := fs.(onlyFilesFS); nolisting {
+			c.Response.WriteHeader(http.StatusNotFound)
+		}
+
+		file := c.Param("filepath")
+		// Check if file exists and/or if we have permission to access it
+		if _, err := fs.Open(file); err != nil {
+			c.Response.WriteHeader(http.StatusNotFound)
+			c.index = -1
+			return
+		}
+
+		fileServer.ServeHTTP(c.Response, c.Request)
+
+	}
+
+	return handler
+}
+
+func (r *Router) combineHandlers(handlers HandlersChain) HandlersChain {
+	finalSize := len(r.Handlers) + len(handlers)
 	if finalSize >= int(abortIndex) {
 		panic("too many handlers")
 	}
 	mergedHandlers := make(HandlersChain, finalSize)
-	copy(mergedHandlers, r.Middlewares)
-	copy(mergedHandlers[len(r.Middlewares):], handlers)
+	copy(mergedHandlers, r.Handlers)
+	copy(mergedHandlers[len(r.Handlers):], handlers)
 	return mergedHandlers
+}
+
+func (r *Router) calculateAbsolutePath(relativePath string) string {
+	return joinPaths(r.basePath, relativePath)
 }
 
 func (r *Router) allowed(path, reqMethod string) (allow string) {

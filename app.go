@@ -13,16 +13,21 @@ import (
 
 // New returns an App instance with default configuration.
 func New() *App {
-	cfg := map[string]interface{}{}
+	cfg := Config{}
 	return NewWithConfig(cfg)
 }
 
 // NewWithConfig creates new application instance
 // with given configuration object
-func NewWithConfig(data map[string]interface{}) *App {
+func NewWithConfig(cfg Config) *App {
 
-	opts := NewOptions(data)
+	opts := NewOptions(cfg)
+	return NewWithOptions(opts)
+}
 
+// NewWithOptions creates new application instance
+// with given Application Options object
+func NewWithOptions(opts Options) *App {
 	// create application router
 	r := NewRouter()
 
@@ -31,6 +36,7 @@ func NewWithConfig(data map[string]interface{}) *App {
 		router:  r,
 	}
 
+	//context pool allocation
 	app.pool.New = func() interface{} {
 		return app.allocateContext()
 	}
@@ -42,8 +48,7 @@ func NewWithConfig(data map[string]interface{}) *App {
 type App struct {
 	Options
 	router *Router
-	//render engine
-	pool sync.Pool
+	pool   sync.Pool
 }
 
 // Use appends one or more middlewares onto the Router stack.
@@ -130,6 +135,11 @@ func (a *App) Serve() error {
 
 }
 
+// Router returns application router instance
+func (a *App) Router() *Router {
+	return a.router
+}
+
 // ServeHTTP conforms to the http.Handler interface.
 func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// get context from pool
@@ -202,14 +212,14 @@ func (a *App) handleHTTPRequest(c *Context) {
 
 	if a.HandleMethodNotAllowed {
 		if allow := a.router.allowed(path, httpMethod); len(allow) > 0 {
-			c.handlers = a.router.Middlewares
-			c.ServeError(http.StatusMethodNotAllowed, []byte(a.AppConfig.GetStringD("405Body", default405Body)))
+			c.handlers = a.router.Handlers
+			c.ServeError(http.StatusMethodNotAllowed, []byte(a.AppConfig.StringDefault("405Body", default405Body)))
 			return
 		}
 	}
 
-	c.handlers = a.router.Middlewares
-	c.ServeError(http.StatusNotFound, []byte(a.AppConfig.GetStringD("404Body", default404Body)))
+	c.handlers = a.router.Handlers
+	c.ServeError(http.StatusNotFound, []byte(a.AppConfig.StringDefault("404Body", default404Body)))
 }
 
 func (a *App) allocateContext() *Context {
