@@ -1,6 +1,11 @@
 package flow
 
-import "github.com/go-flow/flow/sessions"
+import (
+	"html/template"
+
+	"github.com/go-flow/flow/sessions"
+	"github.com/go-flow/flow/view"
+)
 
 const (
 	defaultEnv                    = "development"
@@ -37,8 +42,8 @@ type Options struct {
 	// SessionStore is used to back the session.
 	SesionStore sessions.Store
 
-	// SessionName is the name of the session cookie that is set.
-	SessionName string
+	//ViewEngine is used to render HTML
+	ViewEngine *view.Engine
 
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -97,6 +102,18 @@ func optionsWithDefaults(cfg Config) Options {
 	opts.MaxMultipartMemory = cfg.Int64Default("maxMultipartMemory", defaultMultipartMemory)
 
 	opts.HandleMethodNotAllowed = cfg.BoolDefault("handleMethodNotAllowed", defaultHandleMethodNotAllowed)
+
+	opts.Logger = NewLogger(opts.LogLevel)
+
+	opts.ViewEngine = view.New(view.Config{
+		Root:         "views",
+		Extension:    ".html",
+		Master:       "layouts/master",
+		Partials:     []string{},
+		Funcs:        make(template.FuncMap),
+		DisableCache: false,
+		Delims:       view.Delims{Left: "{{", Right: "}}"},
+	})
 
 	if _, found := cfg["404Body"]; !found {
 		cfg["404Body"] = default404Body

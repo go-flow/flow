@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-flow/flow/render"
+
 	"github.com/go-flow/flow/binding"
 )
 
@@ -615,6 +617,17 @@ func (c *Context) requestHeader(key string) string {
 /************************************/
 /******** RESPONSE RENDERING ********/
 /************************************/
+func bodyAllowedForStatus(status int) bool {
+	switch {
+	case status >= 100 && status <= 199:
+		return false
+	case status == http.StatusNoContent:
+		return false
+	case status == http.StatusNotModified:
+		return false
+	}
+	return true
+}
 
 // Status sets the HTTP response code.
 func (c *Context) Status(code int) {
@@ -635,6 +648,74 @@ func (c *Context) Header(key, value string) {
 // GetHeader returns value from request headers.
 func (c *Context) GetHeader(key string) string {
 	return c.requestHeader(key)
+}
+
+// Render writes the response headers and calls render.Render to render data.
+func (c *Context) Render(code int, r render.Renderer) {
+	c.Status(code)
+
+	if !bodyAllowedForStatus(code) {
+		r.WriteContentType(c.Response)
+		c.Response.WriteHeaderNow()
+		return
+	}
+
+	if err := r.Render(c.Response); err != nil {
+		panic(err)
+	}
+
+}
+
+// HTML renders the HTTP template specified by its file name.
+// It also updates the HTTP code and sets the Content-Type as "text/html".
+// See http://golang.org/doc/articles/wiki/
+func (c *Context) HTML(code int, name string, obj interface{}) {
+	r := c.app.ViewEngine.Renderer(name, obj)
+	c.Render(code, r)
+}
+
+// JSON serializes the given struct as JSON into the response body.
+// It also sets the Content-Type as "application/json".
+func (c *Context) JSON(code int, obj interface{}) {
+	c.Render(code, render.JSON{Data: obj})
+}
+
+// XML serializes the given struct as XML into the response body.
+// It also sets the Content-Type as "application/xml".
+func (c *Context) XML(code int, obj interface{}) {
+	c.Render(code, render.XML{Data: obj})
+}
+
+// String writes the given string into the response body.
+func (c *Context) String(code int, format string, values ...interface{}) {
+	c.Render(code, render.String{Format: format, Data: values})
+}
+
+// Redirect returns a HTTP redirect to the specific location.
+func (c *Context) Redirect(code int, location string) {
+	c.Render(-1, render.Redirect{
+		Code:     code,
+		Location: location,
+		Request:  c.Request,
+	})
+}
+
+// Data writes some data into the body stream and updates the HTTP code.
+func (c *Context) Data(code int, contentType string, data []byte) {
+	c.Render(code, render.Data{
+		ContentType: contentType,
+		Data:        data,
+	})
+}
+
+// DataFromReader writes the specified reader into the body stream and updates the HTTP code.
+func (c *Context) DataFromReader(code int, contentLength int64, contentType string, reader io.Reader, extraHeaders map[string]string) {
+	c.Render(code, render.Reader{
+		Headers:       extraHeaders,
+		ContentType:   contentType,
+		ContentLength: contentLength,
+		Reader:        reader,
+	})
 }
 
 // GetRawData return stream data.

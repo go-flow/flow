@@ -2,6 +2,7 @@ package flow
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -96,7 +97,6 @@ func (a *App) DELETE(path string, handler HandlerFunc) {
 // gracefully.
 func (a *App) Serve() error {
 	a.Logger.Infof("Starting Application at %s", a.Addr)
-
 	// create http server
 	srv := http.Server{
 		Handler: a,
@@ -158,15 +158,21 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	a.pool.Put(c)
 }
 
-// HandleContext re-enter a context that has been rewritten.
-// This can be done by setting c.Request.URL.Path to your new target.
-// Disclaimer: You can loop yourself to death with this, use wisely.
-func (a *App) HandleContext(c *Context) {
-	c.reset()
-	a.handleHTTPRequest(c)
-}
 func (a *App) stop() error {
 	return nil
+}
+
+// Stop issues interupt signal
+func (a *App) Stop() error {
+	fmt.Println("stop pocetak")
+	// get current process
+	proc, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		return err
+	}
+	a.Logger.Debug("Stopping....")
+	// issue interupt signal
+	return proc.Signal(os.Interrupt)
 }
 
 func (a *App) handleHTTPRequest(c *Context) {
