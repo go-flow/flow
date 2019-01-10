@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -670,6 +671,10 @@ func (c *Context) Render(code int, r render.Renderer) {
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj interface{}) {
+	if c.app.ViewEngine == nil {
+		c.AbortWithError(http.StatusInternalServerError, errors.New("application view engine not enabled"))
+		return
+	}
 	r := c.app.ViewEngine.Renderer(name, obj)
 	c.Render(code, r)
 }

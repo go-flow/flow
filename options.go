@@ -16,9 +16,12 @@ const (
 	defaultRedirectFixedPath      = false
 	defaultHandleMethodNotAllowed = true
 	defaultMultipartMemory        = 32 << 20 // 32 MB
-	defaultSecureJSONPrefix       = "while(1);"
 	default404Body                = "404 page not found"
 	default405Body                = "405 method not allowed"
+	defaultUseLogger              = true
+	defaultUseViewEngine          = true
+	defaultUseSession             = true
+	defaultSessionSecret          = "c8OMa61enGu9Nt1fS13RkmUz17W7SRt8"
 )
 
 // Options are used to configure and define how your application should run.
@@ -40,7 +43,7 @@ type Options struct {
 	Logger Logger
 
 	// SessionStore is used to back the session.
-	SesionStore sessions.Store
+	SessionStore sessions.Store
 
 	//ViewEngine is used to render HTML
 	ViewEngine *view.Engine
@@ -103,17 +106,33 @@ func optionsWithDefaults(cfg Config) Options {
 
 	opts.HandleMethodNotAllowed = cfg.BoolDefault("handleMethodNotAllowed", defaultHandleMethodNotAllowed)
 
-	opts.Logger = NewLogger(opts.LogLevel)
+	if opts.Logger == nil && cfg.BoolDefault("useLogger", defaultUseLogger) == true {
+		opts.Logger = NewLogger(opts.LogLevel)
+	}
 
-	opts.ViewEngine = view.New(view.Config{
-		Root:         "views",
-		Extension:    ".html",
-		Master:       "layouts/master",
-		Partials:     []string{},
-		Funcs:        make(template.FuncMap),
-		DisableCache: false,
-		Delims:       view.Delims{Left: "{{", Right: "}}"},
-	})
+	if opts.ViewEngine == nil && cfg.BoolDefault("useViewEngine", defaultUseViewEngine) == true {
+		opts.ViewEngine = view.New(view.Config{
+			Root:         cfg.StringDefault("viewsRoot", "views"),
+			Extension:    cfg.StringDefault("viewsExt", ".html"),
+			Master:       cfg.StringDefault("viewsMasterLayout", "layouts/master"),
+			Partials:     []string{},
+			Funcs:        make(template.FuncMap),
+			DisableCache: false,
+			Delims:       view.Delims{Left: "{{", Right: "}}"},
+		})
+	}
+
+	if opts.SessionStore == nil && cfg.BoolDefault("useSession", defaultUseSession) {
+		secret := cfg.String("SessionSecret")
+		if secret == "" {
+			if opts.Env != defaultEnv && opts.Logger != nil {
+				opts.Logger.Warn()
+			} else {
+				secret = defaultSessionSecret
+			}
+		}
+		opts.SessionStore = sessions.NewCookieStore([]byte(secret))
+	}
 
 	if _, found := cfg["404Body"]; !found {
 		cfg["404Body"] = default404Body
