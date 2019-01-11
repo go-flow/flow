@@ -154,7 +154,7 @@ func optionsWithDefaults(cfg Config) Options {
 		secret := cfg.String("SessionSecret")
 		if secret == "" {
 			if opts.Env != defaultEnv && opts.Logger != nil {
-				opts.Logger.Warn()
+				opts.Logger.Warn("SessionSecret configuration key is not set. Your sessions are not safe!")
 			} else {
 				secret = defaultSessionSecret
 			}

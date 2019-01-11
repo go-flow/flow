@@ -119,3 +119,10 @@ func (e *Engine) SetFileHandler(handle FileHandler) {
 	}
 	e.fileHandler = handle
 }
+
+// SetTemplateFuncs sets template functs for engine
+//
+// templateFuncs are used as view helpers
+func (e *Engine) SetTemplateFuncs(funcs template.FuncMap) {
+	e.config.Funcs = funcs
+}
