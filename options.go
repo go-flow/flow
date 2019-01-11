@@ -2,6 +2,9 @@ package flow
 
 import (
 	"html/template"
+	"io/ioutil"
+	"path"
+	"strings"
 
 	"github.com/go-flow/flow/sessions"
 	"github.com/go-flow/flow/view"
@@ -24,6 +27,10 @@ const (
 	defaultSessionSecret          = "c8OMa61enGu9Nt1fS13RkmUz17W7SRt8"
 	defaultUseRequestLogger       = true
 	defaultUsePanicRecovery       = true
+	defaultViewsRoot              = "views"
+	defaultViewsExt               = ".tpl"
+	defaultViewsMasterLayout      = "layouts/master"
+	defaultViewsPartialsRoot      = "partials"
 )
 
 // Options are used to configure and define how your application should run.
@@ -122,14 +129,23 @@ func optionsWithDefaults(cfg Config) Options {
 		opts.Logger = NewLogger(opts.LogLevel)
 	}
 
+	viewsRoot := cfg.StringDefault("viewsRoot", defaultViewsRoot)
+	partialsRoot := cfg.StringDefault("viewsPartialsRoot", defaultViewsPartialsRoot)
+	ext := cfg.StringDefault("viewsExt", defaultViewsExt)
+	partials, err := loadPartials(viewsRoot, partialsRoot, ext)
+	if err != nil {
+		opts.Logger.Error(err)
+		return opts
+	}
+
 	if opts.ViewEngine == nil && cfg.BoolDefault("useViewEngine", defaultUseViewEngine) == true {
 		opts.ViewEngine = view.New(view.Config{
-			Root:         cfg.StringDefault("viewsRoot", "views"),
-			Extension:    cfg.StringDefault("viewsExt", ".tpl"),
-			Master:       cfg.StringDefault("viewsMasterLayout", "layouts/master"),
-			Partials:     []string{},
+			Root:         viewsRoot,
+			Extension:    ext,
+			Master:       cfg.StringDefault("viewsMasterLayout", defaultViewsMasterLayout),
+			Partials:     partials,
 			Funcs:        make(template.FuncMap),
-			DisableCache: false,
+			DisableCache: opts.Env == "development",
 			Delims:       view.Delims{Left: "{{", Right: "}}"},
 		})
 	}
@@ -156,4 +172,27 @@ func optionsWithDefaults(cfg Config) Options {
 
 	opts.AppConfig = cfg
 	return opts
+}
+
+func loadPartials(viewsRoot, partialsRoot, ext string) ([]string, error) {
+	dirname := path.Join(viewsRoot, partialsRoot)
+	files, err := ioutil.ReadDir(dirname)
+	if err != nil {
+		return nil, err
+	}
+	partials := []string{}
+	for _, f := range files {
+		partial := f.Name()
+		if strings.HasSuffix(partial, ext) {
+			// remove ext from file
+			partial = strings.TrimRight(partial, ext)
+
+			// join file with folder name
+			partial = path.Join(partialsRoot, partial)
+
+			// add to partials
+			partials = append(partials, partial)
+		}
+	}
+	return partials, nil
 }

@@ -590,8 +590,10 @@ func (c *Context) ShouldBindWith(obj interface{}, b binding.Binder) error {
 	return b.Bind(c.Request, obj)
 }
 
-// ClientIP implements a best effort algorithm to return the real client IP, it parses
-// X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
+// ClientIP implements a best effort algorithm to return the real client IP
+//
+// it parses X-Real-IP and X-Forwarded-For in order to work properly
+// with reverse-proxies such us: nginx or haproxy.
 // Use X-Forwarded-For before X-Real-Ip as nginx uses X-Real-Ip with the proxy's IP.
 func (c *Context) ClientIP() string {
 
@@ -613,6 +615,21 @@ func (c *Context) ClientIP() string {
 	}
 
 	return ""
+}
+
+// RequestID implements a best effort algorithm to return tracing request ID for current request
+//
+// it parses X-Request-ID which is ment to be an application level tracing id
+// and X-Amzn-Trace-Id which is automatically added by Amazon loadbalancers
+func (c *Context) RequestID() string {
+	// check if request ID exists in headers
+	requestID := c.requestHeader("X-Request-ID")
+
+	if requestID == "" {
+		//check if  X-Amzn-Trace-Id exists
+		requestID = c.requestHeader("X-Amzn-Trace-Id")
+	}
+	return requestID
 }
 
 // ContentType returns the Content-Type header of the request.
