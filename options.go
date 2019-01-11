@@ -22,6 +22,8 @@ const (
 	defaultUseViewEngine          = true
 	defaultUseSession             = true
 	defaultSessionSecret          = "c8OMa61enGu9Nt1fS13RkmUz17W7SRt8"
+	defaultUseRequestLogger       = true
+	defaultUsePanicRecovery       = true
 )
 
 // Options are used to configure and define how your application should run.
@@ -80,6 +82,12 @@ type Options struct {
 
 	// Application speccific configuration object
 	AppConfig Config
+
+	// UseRequestLogger determines if RequestLogger will be used by default
+	UseRequestLogger bool
+
+	// UsePanicRecovery determines if PanicREcovery will be used by default
+	UsePanicRecovery bool
 }
 
 // NewOptions returns a new Options instance with sensible defaults
@@ -105,6 +113,10 @@ func optionsWithDefaults(cfg Config) Options {
 	opts.MaxMultipartMemory = cfg.Int64Default("maxMultipartMemory", defaultMultipartMemory)
 
 	opts.HandleMethodNotAllowed = cfg.BoolDefault("handleMethodNotAllowed", defaultHandleMethodNotAllowed)
+
+	opts.UseRequestLogger = cfg.BoolDefault("useRequestLogger", defaultUseRequestLogger)
+
+	opts.UsePanicRecovery = cfg.BoolDefault("usePanicRecovery", defaultUsePanicRecovery)
 
 	if opts.Logger == nil && cfg.BoolDefault("useLogger", defaultUseLogger) == true {
 		opts.Logger = NewLogger(opts.LogLevel)

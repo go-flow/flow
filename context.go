@@ -39,6 +39,8 @@ type Context struct {
 
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
+
+	logger Logger
 }
 
 /************************************/
@@ -126,7 +128,24 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 
 // Logger gets application Logger instance
 func (c *Context) Logger() Logger {
-	return c.app.Logger
+	if c.logger == nil {
+		c.logger = c.app.Logger
+	}
+	return c.logger
+}
+
+// LogField adds the key/value pair onto the Logger to be printed out
+// as part of the request logging. This allows you to easily add things
+// like metrics (think DB times) to your request.
+func (c *Context) LogField(key string, value interface{}) {
+	c.logger = c.Logger().WithField(key, value)
+}
+
+// LogFields adds the key/value pairs onto the Logger to be printed out
+// as part of the request logging. This allows you to easily add things
+// like metrics (think DB times) to your request.
+func (c *Context) LogFields(values map[string]interface{}) {
+	c.logger = c.Logger().WithFields(values)
 }
 
 /************************************/

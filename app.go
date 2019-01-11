@@ -32,6 +32,14 @@ func NewWithOptions(opts Options) *App {
 	// create application router
 	r := NewRouter()
 
+	if opts.UsePanicRecovery {
+		r.Use(PanicRecovery())
+	}
+
+	if opts.UseRequestLogger {
+		r.Use(RequestLogger())
+	}
+
 	app := &App{
 		Options: opts,
 		router:  r,
