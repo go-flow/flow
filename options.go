@@ -125,7 +125,7 @@ func optionsWithDefaults(cfg Config) Options {
 	if opts.ViewEngine == nil && cfg.BoolDefault("useViewEngine", defaultUseViewEngine) == true {
 		opts.ViewEngine = view.New(view.Config{
 			Root:         cfg.StringDefault("viewsRoot", "views"),
-			Extension:    cfg.StringDefault("viewsExt", ".html"),
+			Extension:    cfg.StringDefault("viewsExt", ".tpl"),
 			Master:       cfg.StringDefault("viewsMasterLayout", "layouts/master"),
 			Partials:     []string{},
 			Funcs:        make(template.FuncMap),
