@@ -91,7 +91,7 @@ type Options struct {
 	MaxMultipartMemory int64
 
 	// Application speccific configuration object
-	AppConfig Config
+	Config Config
 
 	// UseRequestLogger determines if RequestLogger will be used by default
 	UseRequestLogger bool
@@ -197,7 +197,7 @@ func optionsWithDefaults(cfg Config) Options {
 		cfg["405Body"] = default405Body
 	}
 
-	opts.AppConfig = cfg
+	opts.Config = cfg
 	return opts
 }
 

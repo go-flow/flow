@@ -232,13 +232,13 @@ func (a *App) handleHTTPRequest(c *Context) {
 	if a.HandleMethodNotAllowed {
 		if allow := a.router.allowed(path, httpMethod); len(allow) > 0 {
 			c.handlers = a.router.Handlers
-			c.ServeError(http.StatusMethodNotAllowed, []byte(a.AppConfig.StringDefault("405Body", default405Body)))
+			c.ServeError(http.StatusMethodNotAllowed, []byte(a.Config.StringDefault("405Body", default405Body)))
 			return
 		}
 	}
 
 	c.handlers = a.router.Handlers
-	c.ServeError(http.StatusNotFound, []byte(a.AppConfig.StringDefault("404Body", default404Body)))
+	c.ServeError(http.StatusNotFound, []byte(a.Config.StringDefault("404Body", default404Body)))
 }
 
 func (a *App) allocateContext() *Context {
