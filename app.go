@@ -40,6 +40,10 @@ func NewWithOptions(opts Options) *App {
 		r.Use(RequestLogger())
 	}
 
+	if opts.ServeStatic {
+		r.Static(opts.StaticPath, opts.StaticDir)
+	}
+
 	app := &App{
 		Options: opts,
 		router:  r,
@@ -156,6 +160,7 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c.writermem.reset(w)
 	// set request
 	c.Request = r
+
 	// reset context from previous use
 	c.reset()
 

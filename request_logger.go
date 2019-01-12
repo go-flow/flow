@@ -30,10 +30,7 @@ func RequestLogger() HandlerFunc {
 		//execute next handler in chain
 		c.Next()
 
-		if ct := c.ContentType(); ct != "" {
-			c.LogField("content_type", ct)
-		}
-		c.LogFields(map[string]interface{}{
+		l := c.Logger().WithFields(map[string]interface{}{
 			"request_id": requestID,
 			"status":     c.Response.Status(),
 			"method":     c.Request.Method,
@@ -43,6 +40,6 @@ func RequestLogger() HandlerFunc {
 			"human_size": byteCountDecimal(int64(c.Response.Size())),
 			"size":       c.Response.Size(),
 		})
-		c.Logger().Info("request-logger")
+		l.Info("request-logger")
 	}
 }

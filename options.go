@@ -31,6 +31,9 @@ const (
 	defaultViewsExt               = ".tpl"
 	defaultViewsMasterLayout      = "layouts/master"
 	defaultViewsPartialsRoot      = "partials"
+	defaultServeStatic            = true
+	defaultStaticPath             = "/static"
+	defaultStaticDir              = "./public"
 )
 
 // Options are used to configure and define how your application should run.
@@ -93,8 +96,23 @@ type Options struct {
 	// UseRequestLogger determines if RequestLogger will be used by default
 	UseRequestLogger bool
 
-	// UsePanicRecovery determines if PanicREcovery will be used by default
+	// UsePanicRecovery determines if PanicRecovery will be used by default
 	UsePanicRecovery bool
+
+	// ServeStatic determines if application will serve static files
+	//
+	// Default value is `true`
+	ServeStatic bool
+
+	//StaticPath defines on which path static content will be served
+	//
+	// Default value is `/`
+	StaticPath string
+
+	// StaticDir is path to static dir
+	//
+	// default value is `public`
+	StaticDir string
 }
 
 // NewOptions returns a new Options instance with sensible defaults
@@ -125,6 +143,10 @@ func optionsWithDefaults(cfg Config) Options {
 
 	opts.UsePanicRecovery = cfg.BoolDefault("usePanicRecovery", defaultUsePanicRecovery)
 
+	opts.ServeStatic = cfg.BoolDefault("serveStatic", defaultServeStatic)
+	opts.StaticPath = cfg.StringDefault("staticPath", defaultStaticPath)
+	opts.StaticDir = cfg.StringDefault("staticDir", defaultStaticDir)
+
 	if opts.Logger == nil && cfg.BoolDefault("useLogger", defaultUseLogger) == true {
 		opts.Logger = NewLogger(opts.LogLevel)
 	}
@@ -134,7 +156,12 @@ func optionsWithDefaults(cfg Config) Options {
 	ext := cfg.StringDefault("viewsExt", defaultViewsExt)
 	partials, err := loadPartials(viewsRoot, partialsRoot, ext)
 	if err != nil {
-		opts.Logger.Error(err)
+		if opts.Logger != nil {
+			opts.Logger.Error(err)
+		} else {
+			panic(err)
+		}
+
 		return opts
 	}
 

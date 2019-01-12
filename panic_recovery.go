@@ -31,11 +31,11 @@ func PanicRecovery() HandlerFunc {
 
 				httprequest, _ := httputil.DumpRequest(c.Request, false)
 
-				c.LogFields(map[string]interface{}{
+				l := c.Logger().WithFields(map[string]interface{}{
 					"request": string(httprequest),
 					"err":     err,
 				})
-				c.Logger().Error("panic-recovery")
+				l.Error("panic-recovery")
 
 				if brokenPipe {
 					c.Error(err.(error))

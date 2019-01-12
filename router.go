@@ -5,6 +5,7 @@
 package flow
 
 import (
+	"fmt"
 	"math"
 	"net/http"
 	"path"
@@ -225,8 +226,8 @@ func (r *Router) createStaticHandler(relativePath string, fs http.FileSystem) Ha
 		file := c.Param("filepath")
 		// Check if file exists and/or if we have permission to access it
 		if _, err := fs.Open(file); err != nil {
-			c.Response.WriteHeader(http.StatusNotFound)
-			c.index = -1
+			fmt.Println(err)
+			c.ServeError(http.StatusNotFound, []byte(c.app.AppConfig.StringDefault("404Body", default404Body)))
 			return
 		}
 

@@ -29,7 +29,7 @@ func Dir(root string, listDirectory bool) http.FileSystem {
 
 // Open conforms to http.Filesystem.
 func (fs onlyFilesFS) Open(name string) (http.File, error) {
-	f, err := fs.Open(name)
+	f, err := fs.fs.Open(name)
 	if err != nil {
 		return nil, err
 	}
