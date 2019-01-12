@@ -27,6 +27,8 @@ func RequestLogger() HandlerFunc {
 			c.Request.Header.Add("X-Request-ID", requestID)
 		}
 
+		c.Response.Header().Add("X-Request-ID", requestID)
+
 		//execute next handler in chain
 		c.Next()
 

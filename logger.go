@@ -16,6 +16,7 @@ type Logger interface {
 	Fatalf(string, ...interface{})
 	Debug(...interface{})
 	Info(...interface{})
+	Print(...interface{})
 	Warn(...interface{})
 	Error(...interface{})
 	Fatal(...interface{})
