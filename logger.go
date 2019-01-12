@@ -1,6 +1,9 @@
 package flow
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,13 +48,31 @@ func (l defaultLogger) WithFields(m map[string]interface{}) Logger {
 // NewLogger based on the specified log level.
 // This logger will log to the STDOUT in a human readable,
 // but parseable form.
-/*
-	Example: time="2016-12-01T21:02:07-05:00" level=info duration=225.283µs human_size="106 B" method=GET path="/" render=199.79µs request_id=2265736089 size=106 status=200
-*/
 func NewLogger(level string) Logger {
 	l := logrus.New()
 	l.Level, _ = logrus.ParseLevel(level)
 	l.Formatter = &logrus.JSONFormatter{}
+
+	return defaultLogger{l}
+}
+
+// NewLoggerWithFormatter  creates logger instance
+// based on the specified log level and formatter
+//
+//This logger will log to the STDOUT in a human readable,
+// but parseable form.
+// Supported formatters are `text` and `json`
+func NewLoggerWithFormatter(level, formatter string) Logger {
+	l := logrus.New()
+	l.Level, _ = logrus.ParseLevel(level)
+	switch strings.ToLower(formatter) {
+	case "text":
+		l.Formatter = &logrus.TextFormatter{}
+	case "json":
+		l.Formatter = &logrus.JSONFormatter{}
+	default:
+		panic(fmt.Sprintf("Unsupported Logger formatter `%s`. Supported formaters are `text` and `json` ", formatter))
+	}
 
 	return defaultLogger{l}
 }

@@ -15,6 +15,7 @@ const (
 	defaultName                   = "FlowApp"
 	defaultAddr                   = "0.0.0.0:3000"
 	defaultLogLevel               = "debug"
+	defaultLogFormat              = "text"
 	defaultRedirectTrailingSlash  = true
 	defaultRedirectFixedPath      = false
 	defaultHandleMethodNotAllowed = true
@@ -50,6 +51,11 @@ type Options struct {
 
 	// LogLevel defaults to "debug".
 	LogLevel string
+
+	// LogFormat determines in which format our logs will be
+	//
+	// Default is `text`
+	LogFormat string
 
 	// Logger to be used with the application. A default one is provided.
 	Logger Logger
@@ -130,6 +136,7 @@ func optionsWithDefaults(cfg Config) Options {
 	opts.Addr = cfg.StringDefault("addr", defaultAddr)
 
 	opts.LogLevel = cfg.StringDefault("logLevel", defaultLogLevel)
+	opts.LogFormat = cfg.StringDefault("logFormat", defaultLogFormat)
 
 	opts.RedirectTrailingSlash = cfg.BoolDefault("redirectTrailingSlash", defaultRedirectTrailingSlash)
 
@@ -148,7 +155,7 @@ func optionsWithDefaults(cfg Config) Options {
 	opts.StaticDir = cfg.StringDefault("staticDir", defaultStaticDir)
 
 	if opts.Logger == nil && cfg.BoolDefault("useLogger", defaultUseLogger) == true {
-		opts.Logger = NewLogger(opts.LogLevel)
+		opts.Logger = NewLoggerWithFormatter(opts.LogLevel, opts.LogFormat)
 	}
 
 	viewsRoot := cfg.StringDefault("viewsRoot", defaultViewsRoot)
