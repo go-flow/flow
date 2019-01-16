@@ -141,6 +141,11 @@ func (c *Context) SetLogger(l Logger) {
 	c.logger = l
 }
 
+// AppConfig returns copy of application config object
+func (c *Context) AppConfig() Config {
+	return c.app.Config
+}
+
 /************************************/
 /********* ERROR MANAGEMENT *********/
 /************************************/
