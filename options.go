@@ -25,6 +25,7 @@ const (
 	defaultUseLogger              = true
 	defaultUseViewEngine          = true
 	defaultUseSession             = true
+	defaultSessionName            = "_flow_app_session"
 	defaultSessionSecret          = "c8OMa61enGu9Nt1fS13RkmUz17W7SRt8"
 	defaultUseRequestLogger       = true
 	defaultUsePanicRecovery       = true
@@ -57,11 +58,14 @@ type Options struct {
 	// Default is `text`
 	LogFormat string
 
-	// Logger to be used with the application. A default one is provided.
+	// Logger to be used with the application.
 	Logger Logger
 
 	// SessionStore is used to back the session.
 	SessionStore sessions.Store
+
+	// SessionName is the name of the session cookie that is set.
+	SessionName string
 
 	//ViewEngine is used to render HTML
 	ViewEngine *view.Engine
@@ -184,6 +188,7 @@ func optionsWithDefaults(cfg Config) Options {
 		})
 	}
 
+	opts.SessionName = cfg.StringDefault("sessionName", defaultSessionName)
 	if opts.SessionStore == nil && cfg.BoolDefault("useSession", defaultUseSession) {
 		secret := cfg.String("sessionSecret")
 		if secret == "" {

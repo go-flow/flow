@@ -40,7 +40,7 @@ type Context struct {
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
 
-	logger *Logger
+	logger Logger
 }
 
 /************************************/
@@ -128,7 +128,17 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 
 // Logger gets application Logger instance
 func (c *Context) Logger() Logger {
+	if c.logger != nil {
+		return c.logger
+	}
 	return c.app.Logger
+}
+
+// SetLogger sets context logger
+//
+// this is used in cases when we want to set loger with fields scoped to request
+func (c *Context) SetLogger(l Logger) {
+	c.logger = l
 }
 
 /************************************/
@@ -832,18 +842,41 @@ func (c *Context) ServeError(code int, message []byte) {
 }
 
 /************************************/
-/***** GOLANG.ORG/NET/CONTEXT *****/
+/*****    SESSION MANAGEMENT    *****/
+/************************************/
+
+// Session gets session object for current request
+func (c *Context) Session() *Session {
+	if c.app.SessionStore == nil {
+		c.Logger().Error("Session is not enabled in configuration")
+		return nil
+	}
+
+	session, _ := c.app.SessionStore.Get(c.Request, c.app.SessionName)
+	return &Session{
+		Session: session,
+		req:     c.Request,
+		res:     c.Response,
+	}
+}
+
+/************************************/
+/*****  GOLANG.ORG/NET/CONTEXT  *****/
 /************************************/
 
 // Deadline returns the time when work done on behalf of this context
-// should be canceled. Deadline returns ok==false when no deadline is
+// should be canceled.
+//
+// Deadline returns ok==false when no deadline is
 // set. Successive calls to Deadline return the same results.
 func (c *Context) Deadline() (time.Time, bool) {
 	return c.Request.Context().Deadline()
 }
 
 // Done returns a channel that's closed when work done on behalf of this
-// context should be canceled. Done may return nil if this context can
+// context should be canceled.
+//
+// Done may return nil if this context can
 // never be canceled. Successive calls to Done return the same value.
 func (c *Context) Done() <-chan struct{} {
 	return c.Request.Context().Done()
@@ -851,6 +884,7 @@ func (c *Context) Done() <-chan struct{} {
 
 // Err returns a non-nil error value after Done is closed,
 // successive calls to Err return the same error.
+//
 // If Done is not yet closed, Err returns nil.
 // If Done is closed, Err returns a non-nil error explaining why:
 // Canceled if the context was canceled

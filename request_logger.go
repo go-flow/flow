@@ -29,11 +29,14 @@ func RequestLogger() HandlerFunc {
 
 		c.Response.Header().Add("X-Request-ID", requestID)
 
+		l := c.Logger().WithField("request_id", requestID)
+		// store logger to use request_id for all logs in current context
+		c.SetLogger(l)
+
 		//execute next handler in chain
 		c.Next()
 
-		l := c.Logger().WithFields(map[string]interface{}{
-			"request_id": requestID,
+		l = c.Logger().WithFields(map[string]interface{}{
 			"status":     c.Response.Status(),
 			"method":     c.Request.Method,
 			"path":       c.Request.URL.String(),
