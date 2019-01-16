@@ -179,13 +179,13 @@ func optionsWithDefaults(cfg Config) Options {
 			Master:       cfg.StringDefault("viewsMasterLayout", defaultViewsMasterLayout),
 			Partials:     partials,
 			Funcs:        make(template.FuncMap),
-			DisableCache: opts.Env == "development",
+			DisableCache: cfg.BoolDefault("viewsDisableCache", opts.Env == "development"),
 			Delims:       view.Delims{Left: "{{", Right: "}}"},
 		})
 	}
 
 	if opts.SessionStore == nil && cfg.BoolDefault("useSession", defaultUseSession) {
-		secret := cfg.String("SessionSecret")
+		secret := cfg.String("sessionSecret")
 		if secret == "" {
 			if opts.Env != defaultEnv && opts.Logger != nil {
 				opts.Logger.Warn("SessionSecret configuration key is not set. Your sessions are not safe!")
