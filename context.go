@@ -146,6 +146,11 @@ func (c *Context) AppConfig() Config {
 	return c.app.Config
 }
 
+// AppOptions returns copy of application Options object
+func (c *Context) AppOptions() Options {
+	return c.app.Options
+}
+
 /************************************/
 /********* ERROR MANAGEMENT *********/
 /************************************/
