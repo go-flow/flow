@@ -63,5 +63,5 @@ func (s *Session) AddFlash(value interface{}, vars ...string) {
 // A single variadic argument is accepted, and it is optional: it defines
 // the flash key. If not defined "_flash" is used by default.
 func (s *Session) Flashes(vars ...string) []interface{} {
-	return s.Session.Flashes(vars)
+	return s.Session.Flashes(vars...)
 }
