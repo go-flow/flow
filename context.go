@@ -735,7 +735,6 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 
 		// get languages
 		langs := T.ExtractLanguage(c)
-
 		// define translation function
 		transFunc, err := i18n.Tfunc(langs[0], langs[1:]...)
 		if err != nil {
