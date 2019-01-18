@@ -23,6 +23,16 @@ type Engine struct {
 	fileHandler FileHandler
 }
 
+//Clone clones engine object
+func (e *Engine) Clone() *Engine {
+	return &Engine{
+		config:      e.config,
+		tplMap:      e.tplMap,
+		tplMutex:    sync.RWMutex{},
+		fileHandler: e.fileHandler,
+	}
+}
+
 // Renderer returns go-flow render.Renderer interface instance
 func (e *Engine) Renderer(name string, data interface{}) render.Renderer {
 	return Render{
@@ -124,5 +134,8 @@ func (e *Engine) SetFileHandler(handle FileHandler) {
 //
 // templateFuncs are used as view helpers
 func (e *Engine) SetTemplateFuncs(funcs template.FuncMap) {
-	e.config.Funcs = funcs
+	//f := map[string]interface{}
+	for name, fn := range funcs {
+		e.config.Funcs[name] = fn
+	}
 }

@@ -27,6 +27,9 @@ const (
 	defaultUseSession             = true
 	defaultSessionName            = "_flow_app_session"
 	defaultSessionSecret          = "c8OMa61enGu9Nt1fS13RkmUz17W7SRt8"
+	defaultUseTranslator          = true
+	defaultTranslatorLocalesRoot  = "locales"
+	defaultTranslatorDefaultLang  = "en-US"
 	defaultUseRequestLogger       = true
 	defaultUsePanicRecovery       = true
 	defaultViewsRoot              = "views"
@@ -69,6 +72,9 @@ type Options struct {
 
 	//ViewEngine is used to render HTML
 	ViewEngine *view.Engine
+
+	// Translator is used for i18n translations
+	Translator *Translator
 
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -199,6 +205,15 @@ func optionsWithDefaults(cfg Config) Options {
 			}
 		}
 		opts.SessionStore = sessions.NewCookieStore([]byte(secret))
+	}
+
+	if opts.Translator == nil && cfg.BoolDefault("useTranslator", defaultUseTranslator) {
+		locales := cfg.StringDefault("translatorLocalesRoot", defaultTranslatorLocalesRoot)
+		lang := cfg.StringDefault("translatorDefaultLang", defaultTranslatorDefaultLang)
+		opts.Translator, err = NewTranslator(locales, lang)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	if _, found := cfg["404Body"]; !found {

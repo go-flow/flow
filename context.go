@@ -2,6 +2,7 @@ package flow
 
 import (
 	"errors"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -11,6 +12,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/go-flow/flow/i18n"
 
 	"github.com/go-flow/flow/render"
 
@@ -714,7 +717,43 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 		c.AbortWithError(http.StatusInternalServerError, errors.New("application view engine not enabled"))
 		return
 	}
+
+	// get view renderer
 	r := c.app.ViewEngine.Renderer(name, obj)
+	// check if we use translations
+	T := c.app.Translator
+	if T != nil {
+		if c.AppOptions().Env == "development" {
+			err := T.Load()
+			if err != nil {
+				panic(err)
+			}
+		}
+		ve := c.app.ViewEngine.Clone()
+		// add translation func
+		funcMap := make(template.FuncMap)
+
+		// get languages
+		langs := T.ExtractLanguage(c)
+
+		// define translation function
+		transFunc, err := i18n.Tfunc(langs[0], langs[1:]...)
+		if err != nil {
+			c.Logger().Warn(err)
+			c.Logger().Warn("Your locale files are probably empty or missing")
+		}
+
+		// create viewHelper function
+		funcMap[T.HelperName] = func(translationID string, args ...interface{}) string {
+			return transFunc(translationID, args...)
+		}
+		// assign viewHelper to ViewEngine
+		ve.SetTemplateFuncs(funcMap)
+		// get ViewEngineRenderer
+		r = ve.Renderer(name, obj)
+
+	}
+	// render
 	c.Render(code, r)
 }
 
