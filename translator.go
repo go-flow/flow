@@ -72,13 +72,16 @@ func NewTranslator(filePath string, language string) (*Translator, error) {
 		DefaultLanguage: language,
 		HelperName:      "t",
 		LanguageExtractorOptions: LanguageExtractorOptions{
-			"CookieName":    "lang",
-			"SessionName":   "lang",
-			"URLPrefixName": "lang",
+			"CookieName":       "lang",
+			"SessionName":      "lang",
+			"RequestParamName": "lang",
+			"QueryStringName":  "lang",
 		},
 		LanguageExtractors: []LanguageExtractor{
 			CookieLanguageExtractor,
 			SessionLanguageExtractor,
+			RequestParamLanguageExtractor,
+			QueryStringLanguageExtractor,
 			HeaderLanguageExtractor,
 		},
 	}
@@ -158,7 +161,7 @@ func CookieLanguageExtractor(o LanguageExtractorOptions, c *Context) []string {
 			}
 		}
 	} else {
-		c.Logger().Error("i18n middleware: \"CookieName\" is not defined in LanguageExtractorOptions")
+		c.Logger().Error("i18n Translator: \"CookieName\" is not defined in LanguageExtractorOptions")
 	}
 	return langs
 }
@@ -172,7 +175,7 @@ func SessionLanguageExtractor(o LanguageExtractorOptions, c *Context) []string {
 			langs = append(langs, s.(string))
 		}
 	} else {
-		c.Logger().Error("i18n middleware: \"SessionName\" is not defined in LanguageExtractorOptions")
+		c.Logger().Error("i18n Translator: \"SessionName\" is not defined in LanguageExtractorOptions")
 	}
 	return langs
 }
@@ -189,17 +192,32 @@ func HeaderLanguageExtractor(o LanguageExtractorOptions, c *Context) []string {
 	return langs
 }
 
-// URLPrefixLanguageExtractor is a LanguageExtractor implementation, using a prefix in the URL.
-func URLPrefixLanguageExtractor(o LanguageExtractorOptions, c *Context) []string {
+// QueryStringLanguageExtractor is a LanguageExtractor implementation, using a query param from request.
+func QueryStringLanguageExtractor(o LanguageExtractorOptions, c *Context) []string {
 	langs := make([]string, 0)
 	// try to get the language from an URL prefix:
-	if urlPrefixName := o["URLPrefixName"].(string); urlPrefixName != "" {
-		paramLang := c.Param(urlPrefixName)
-		if paramLang != "" && strings.HasPrefix(c.Request.URL.Path, fmt.Sprintf("/%s", paramLang)) {
+	if urlPrefixName := o["QueryStringName"].(string); urlPrefixName != "" {
+		paramLang := c.Query(urlPrefixName)
+		if paramLang != "" {
 			langs = append(langs, paramLang)
 		}
 	} else {
-		c.Logger().Error("i18n middleware: \"URLPrefixName\" is not defined in LanguageExtractorOptions")
+		c.Logger().Error("i18n Translator: \"QueryStringName\" is not defined in LanguageExtractorOptions")
+	}
+	return langs
+}
+
+// RequestParamLanguageExtractor is a LanguageExtractor implementation, using a param in the URL.
+func RequestParamLanguageExtractor(o LanguageExtractorOptions, c *Context) []string {
+	langs := make([]string, 0)
+	// try to get the language from an URL prefix:
+	if urlPrefixName := o["RequestParamName"].(string); urlPrefixName != "" {
+		paramLang := c.Param(urlPrefixName)
+		if paramLang != "" {
+			langs = append(langs, paramLang)
+		}
+	} else {
+		c.Logger().Error("i18n Translator: \"RequestParamName\" is not defined in LanguageExtractorOptions")
 	}
 	return langs
 }

@@ -137,11 +137,22 @@ func (c *Context) Logger() Logger {
 	return c.app.Logger
 }
 
-// SetLogger sets context logger
+// LogField adds the key/value pair onto the Logger to be printed out
+// as part of the request logging.
 //
-// this is used in cases when we want to set loger with fields scoped to request
-func (c *Context) SetLogger(l Logger) {
-	c.logger = l
+// This allows you to easily add things
+// like metrics (think DB times) to your request.
+func (c *Context) LogField(key string, value interface{}) {
+	c.logger = c.Logger().WithField(key, value)
+}
+
+// LogFields adds the key/value pairs onto the Logger to be printed out
+// as part of the request logging.
+//
+// This allows you to easily add things
+// like metrics (think DB times) to your request.
+func (c *Context) LogFields(values map[string]interface{}) {
+	c.logger = c.Logger().WithFields(values)
 }
 
 // AppConfig returns copy of application config object
@@ -718,8 +729,8 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 		return
 	}
 
-	// get view renderer
-	r := c.app.ViewEngine.Renderer(name, obj)
+	// define renderer
+	var r render.Renderer
 	// check if we use translations
 	T := c.app.Translator
 	if T != nil {
@@ -750,7 +761,8 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 		ve.SetTemplateFuncs(funcMap)
 		// get ViewEngineRenderer
 		r = ve.Renderer(name, obj)
-
+	} else {
+		r = c.app.ViewEngine.Renderer(name, obj)
 	}
 	// render
 	c.Render(code, r)
