@@ -108,6 +108,17 @@ func (a *App) DELETE(path string, handler HandlerFunc) {
 	a.router.DELETE(path, handler)
 }
 
+// Any registers a route that matches all the HTTP methods.
+// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
+func (a *App) Any(relativePath string, handler HandlerFunc) {
+	a.router.Any(relativePath, handler)
+}
+
+// Attach another router to current one
+func (a *App) Attach(prefix string, router *Router) {
+	a.router.Attach(prefix, router)
+}
+
 // MethodNotAllowedHandler is Handler where message and error can be personalized
 // to be in line with application design and logic
 func (a *App) MethodNotAllowedHandler(handler HandlerFunc) {

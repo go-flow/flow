@@ -152,6 +152,15 @@ func (r *Router) Any(relativePath string, handler HandlerFunc) {
 	r.Handle("TRACE", relativePath, handler)
 }
 
+// Attach another router to current one
+func (r *Router) Attach(prefix string, router *Router) {
+
+	for _, route := range router.Routes() {
+		path := joinPaths(prefix, route.Path)
+		r.Handle(route.Method, path, route.HandlersChain...)
+	}
+}
+
 // StaticFile registers a single route in order to serve a single file of the local filesystem.
 //
 // router.StaticFile("favicon.ico", "./resources/favicon.ico")
