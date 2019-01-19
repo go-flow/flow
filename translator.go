@@ -35,7 +35,7 @@ type Translator struct {
 	LanguageExtractorOptions LanguageExtractorOptions
 }
 
-// Load translations from the t.Box.
+// Load translations.
 func (t *Translator) Load() error {
 	return filepath.Walk(t.Path, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
@@ -88,55 +88,11 @@ func NewTranslator(filePath string, language string) (*Translator, error) {
 	return t, t.Load()
 }
 
-// Translate returns the translation of the string identified by translationID.
-//
-// See https://github.com/nicksnyder/go-i18n
-//
-// If there is no translation for translationID, then the translationID itself is returned.
-// This makes it easy to identify missing translations in your app.
-//
-// If translationID is a non-plural form, then the first variadic argument may be a map[string]interface{}
-// or struct that contains template data.
-//
-// If translationID is a plural form, the function accepts two parameter signatures
-// 1. T(count int, data struct{})
-// The first variadic argument must be an integer type
-// (int, int8, int16, int32, int64) or a float formatted as a string (e.g. "123.45").
-// The second variadic argument may be a map[string]interface{} or struct{} that contains template data.
-// 2. T(data struct{})
-// data must be a struct{} or map[string]interface{} that contains a Count field and the template data,
-// Count field must be an integer type (int, int8, int16, int32, int64)
-// or a float formatted as a string (e.g. "123.45").
-func (t *Translator) Translate(c *Context, translationID string, args ...interface{}) string {
-	T := c.Value("T").(i18n.TranslateFunc)
-	return T(translationID, args...)
-}
-
 // AvailableLanguages gets the list of languages provided by the app.
 func (t *Translator) AvailableLanguages() []string {
 	lt := i18n.LanguageTags()
 	sort.Strings(lt)
 	return lt
-}
-
-// Refresh updates the context, reloading translation functions.
-// It can be used after language change, to be able to use translation functions
-// in the new language (for a flash message, for instance).
-func (t *Translator) Refresh(c *Context, newLang string) {
-	langs := []string{newLang}
-	langs = append(langs, t.ExtractLanguage(c)...)
-
-	// Refresh languages
-	c.Set("languages", langs)
-
-	T, err := i18n.Tfunc(langs[0], langs[1:]...)
-	if err != nil {
-		c.Logger().Warn(err)
-		c.Logger().Warn("Your locale files are probably empty or missing")
-	}
-
-	// Refresh translation engine
-	c.Set("T", T)
 }
 
 // ExtractLanguage gets language from defined LanguageExtractors

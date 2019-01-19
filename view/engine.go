@@ -23,60 +23,46 @@ type Engine struct {
 	fileHandler FileHandler
 }
 
-//Clone clones engine object
-func (e *Engine) Clone() *Engine {
-
-	funcs := template.FuncMap{}
-
-	for name, f := range e.config.Funcs {
-		funcs[name] = f
-	}
-
-	c := Config{
-		Root:         e.config.Root,
-		Extension:    e.config.Extension,
-		Master:       e.config.Master,
-		Partials:     e.config.Partials,
-		Funcs:        funcs,
-		DisableCache: e.config.DisableCache,
-		Delims:       e.config.Delims,
-	}
-	return New(c)
-}
-
 // Renderer returns go-flow render.Renderer interface instance
-func (e *Engine) Renderer(name string, data interface{}) render.Renderer {
+func (e *Engine) Renderer(name string, data interface{}, helpers template.FuncMap) render.Renderer {
 	return Render{
-		Engine: e,
-		Name:   name,
-		Data:   data,
+		Engine:  e,
+		Name:    name,
+		Data:    data,
+		Helpers: helpers,
 	}
 }
 
-func (e *Engine) executeRender(out io.Writer, name string, data interface{}) error {
+func (e *Engine) executeRender(out io.Writer, name string, data interface{}, helpers template.FuncMap) error {
 	useMaster := true
 	if filepath.Ext(name) == e.config.Extension {
 		useMaster = false
 		name = strings.TrimSuffix(name, e.config.Extension)
 
 	}
-	return e.executeTemplate(out, name, data, useMaster)
+	return e.executeTemplate(out, name, data, helpers, useMaster)
 }
 
-func (e *Engine) executeTemplate(out io.Writer, name string, data interface{}, useMaster bool) error {
+func (e *Engine) executeTemplate(out io.Writer, name string, data interface{}, helpers template.FuncMap, useMaster bool) error {
 	var tpl *template.Template
 	var err error
 	var ok bool
 
 	allFuncs := make(template.FuncMap, 0)
+	// viewEngine related functions
 	allFuncs["include"] = func(layout string) (template.HTML, error) {
 		buf := new(bytes.Buffer)
-		err := e.executeTemplate(buf, layout, data, false)
+		err := e.executeTemplate(buf, layout, data, helpers, false)
 		return template.HTML(buf.String()), err
 	}
 
-	// Get the plugin collection
+	// Get application wide functions
 	for k, v := range e.config.Funcs {
+		allFuncs[k] = v
+	}
+
+	// Get request Scoped functions
+	for k, v := range helpers {
 		allFuncs[k] = v
 	}
 

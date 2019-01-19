@@ -732,20 +732,21 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 	// define renderer
 	var r render.Renderer
 	// check if we use translations
-	T := c.app.Translator
-	if T != nil {
+	translator := c.app.Translator
+	// request scoped view Helpers
+	helpers := make(template.FuncMap)
+
+	if translator != nil {
+		// reload translations during development
 		if c.AppOptions().Env == "development" {
-			err := T.Load()
+			err := translator.Load()
 			if err != nil {
 				panic(err)
 			}
 		}
-		ve := c.app.ViewEngine.Clone()
-		// add translation func
-		funcMap := make(template.FuncMap)
 
 		// get languages
-		langs := T.ExtractLanguage(c)
+		langs := translator.ExtractLanguage(c)
 		// define translation function
 		transFunc, err := i18n.Tfunc(langs[0], langs[1:]...)
 		if err != nil {
@@ -754,16 +755,13 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 		}
 
 		// create viewHelper function
-		funcMap[T.HelperName] = func(translationID string, args ...interface{}) string {
+		helpers[translator.HelperName] = func(translationID string, args ...interface{}) string {
 			return transFunc(translationID, args...)
 		}
-		// assign viewHelper to ViewEngine
-		ve.SetTemplateFuncs(funcMap)
-		// get ViewEngineRenderer
-		r = ve.Renderer(name, obj)
-	} else {
-		r = c.app.ViewEngine.Renderer(name, obj)
 	}
+
+	r = c.app.ViewEngine.Renderer(name, obj, helpers)
+
 	// render
 	c.Render(code, r)
 }
