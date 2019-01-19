@@ -62,6 +62,10 @@ type App struct {
 	Options
 	router *Router
 	pool   sync.Pool
+
+	methodNotAllowedHandler HandlerFunc
+	notFoundHandler         HandlerFunc
+	errorHandler            HandlerFunc
 }
 
 // Use appends one or more middlewares onto the Router stack.
@@ -102,6 +106,24 @@ func (a *App) PATCH(path string, handler HandlerFunc) {
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
 func (a *App) DELETE(path string, handler HandlerFunc) {
 	a.router.DELETE(path, handler)
+}
+
+// MethodNotAllowedHandler is Handler where message and error can be personalized
+// to be in line with application design and logic
+func (a *App) MethodNotAllowedHandler(handler HandlerFunc) {
+	a.methodNotAllowedHandler = handler
+}
+
+// NotFoundHandler is Handler where message and error can be personalized
+// to be in line with application design and logic
+func (a *App) NotFoundHandler(handler HandlerFunc) {
+	a.notFoundHandler = handler
+}
+
+// ErrorHandler is Handler where message and error can be personalized
+// to be in line with application design and logic
+func (a *App) ErrorHandler(handler HandlerFunc) {
+	a.errorHandler = handler
 }
 
 // Serve the application at the specified address/port and listen for OS

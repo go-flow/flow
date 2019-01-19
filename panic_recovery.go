@@ -41,7 +41,7 @@ func PanicRecovery() HandlerFunc {
 					c.Error(err.(error))
 					c.Abort()
 				} else {
-					c.AbortWithStatus(http.StatusInternalServerError)
+					c.ServeError(http.StatusInternalServerError, []byte(err.(error).Error()))
 				}
 			}
 		}()
