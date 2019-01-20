@@ -889,21 +889,26 @@ func (c *Context) Value(key interface{}) interface{} {
 // ServeError serves error message with given code and message
 // the error is served with text/plain mime type
 func (c *Context) ServeError(code int, err error) {
+	// log error
+	c.Logger().Error(err)
+	// store error in context error stack
+	c.Error(err)
+
+	// write header code
 	c.Response.WriteHeader(code)
+	// execute next Handler in chain
 	c.Next()
 	if c.Response.Written() {
 		return
 	}
 	if c.app.errorHandler != nil && code == http.StatusInternalServerError {
-		c.Error(err)
 		c.app.errorHandler(c)
 	} else if c.app.methodNotAllowedHandler != nil && code == http.StatusMethodNotAllowed {
-		c.Error(err)
 		c.app.methodNotAllowedHandler(c)
 	} else if c.app.notFoundHandler != nil && code == http.StatusNotFound {
-		c.Error(err)
 		c.app.notFoundHandler(c)
 	} else if c.Response.Status() == code {
+
 		c.Response.Header()["Content-Type"] = []string{"text/plain"}
 		c.Response.Write([]byte(err.Error()))
 		return
