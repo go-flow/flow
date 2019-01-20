@@ -168,11 +168,9 @@ func (c *Context) AppOptions() Options {
 /************************************/
 
 // Error attaches an error to the current context. The error is pushed to a list of errors.
-// It's a good idea to call Error for each error that occurred during the resolution of a request.
-// A middleware can be used to collect all the errors and push them to a database together,
-// print a log, or append it in the HTTP response.
+//
 // Error will panic if err is nil.
-func (c *Context) Error(err error) *Error {
+func (c *Context) Error(err error) {
 	if err == nil {
 		panic("err is nil")
 	}
@@ -185,7 +183,6 @@ func (c *Context) Error(err error) *Error {
 	}
 
 	c.Errors = append(c.Errors, parsedError)
-	return parsedError
 }
 
 /************************************/
