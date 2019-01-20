@@ -9,7 +9,7 @@ import (
 type Render struct {
 	Engine  *Engine
 	Name    string
-	Data    interface{}
+	Data    map[string]interface{}
 	Helpers template.FuncMap
 }
 

@@ -24,7 +24,7 @@ type Engine struct {
 }
 
 // Renderer returns go-flow render.Renderer interface instance
-func (e *Engine) Renderer(name string, data interface{}, helpers template.FuncMap) render.Renderer {
+func (e *Engine) Renderer(name string, data map[string]interface{}, helpers template.FuncMap) render.Renderer {
 	return Render{
 		Engine:  e,
 		Name:    name,
@@ -33,7 +33,7 @@ func (e *Engine) Renderer(name string, data interface{}, helpers template.FuncMa
 	}
 }
 
-func (e *Engine) executeRender(out io.Writer, name string, data interface{}, helpers template.FuncMap) error {
+func (e *Engine) executeRender(out io.Writer, name string, data map[string]interface{}, helpers template.FuncMap) error {
 	useMaster := true
 	if filepath.Ext(name) == e.config.Extension {
 		useMaster = false
@@ -43,10 +43,16 @@ func (e *Engine) executeRender(out io.Writer, name string, data interface{}, hel
 	return e.executeTemplate(out, name, data, helpers, useMaster)
 }
 
-func (e *Engine) executeTemplate(out io.Writer, name string, data interface{}, helpers template.FuncMap, useMaster bool) error {
+func (e *Engine) executeTemplate(out io.Writer, name string, data map[string]interface{}, helpers template.FuncMap, useMaster bool) error {
 	var tpl *template.Template
 	var err error
 	var ok bool
+
+	templateMaster := e.config.Master
+	if val, ok := data["viewMasterTemplate"]; ok {
+		templateMaster = val.(string)
+	}
+	fmt.Println(templateMaster)
 
 	allFuncs := make(template.FuncMap, 0)
 	// viewEngine related functions
@@ -71,17 +77,14 @@ func (e *Engine) executeTemplate(out io.Writer, name string, data interface{}, h
 	e.tplMutex.RUnlock()
 
 	exeName := name
-	if useMaster && e.config.Master != "" {
-		exeName = e.config.Master
+	if useMaster && templateMaster != "" {
+		exeName = templateMaster
 	}
 
 	if !ok || e.config.DisableCache {
 		tplList := make([]string, 0)
-		if useMaster {
-			//render()
-			if e.config.Master != "" {
-				tplList = append(tplList, e.config.Master)
-			}
+		if useMaster && templateMaster != "" {
+			tplList = append(tplList, templateMaster)
 		}
 		tplList = append(tplList, name)
 		tplList = append(tplList, e.config.Partials...)
