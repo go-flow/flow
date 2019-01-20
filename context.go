@@ -13,11 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-flow/flow/i18n"
-
-	"github.com/go-flow/flow/render"
-
 	"github.com/go-flow/flow/binding"
+	"github.com/go-flow/flow/i18n"
+	"github.com/go-flow/flow/render"
 )
 
 // Context is request scoped application context
@@ -120,9 +118,9 @@ func (c *Context) AbortWithStatus(code int) {
 // AbortWithError calls `AbortWithStatus()` and `Error()` internally.
 // This method stops the chain, writes the status code and pushes the specified error to `c.Errors`.
 // See Context.Error() for more details.
-func (c *Context) AbortWithError(code int, err error) *Error {
+func (c *Context) AbortWithError(code int, err error) {
+	c.Error(err)
 	c.AbortWithStatus(code)
-	return c.Error(err)
 }
 
 /************************************/
@@ -182,8 +180,7 @@ func (c *Context) Error(err error) *Error {
 	parsedError, ok := err.(*Error)
 	if !ok {
 		parsedError = &Error{
-			Err:  err,
-			Type: ErrorTypePrivate,
+			Err: err,
 		}
 	}
 
@@ -547,7 +544,7 @@ func (c *Context) BindQuery(obj interface{}) error {
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindURI(obj interface{}) error {
 	if err := c.ShouldBindURI(obj); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		c.AbortWithError(http.StatusBadRequest, err)
 		return err
 	}
 	return nil
@@ -558,7 +555,7 @@ func (c *Context) BindURI(obj interface{}) error {
 // See the binding package.
 func (c *Context) MustBindWith(obj interface{}, b binding.Binder) error {
 	if err := c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		c.AbortWithError(http.StatusBadRequest, err)
 		return err
 	}
 	return nil
@@ -728,14 +725,23 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 		c.AbortWithError(http.StatusInternalServerError, errors.New("application view engine not enabled"))
 		return
 	}
-
-	// define renderer
-	var r render.Renderer
-	// check if we use translations
-	translator := c.app.Translator
 	// request scoped view Helpers
 	helpers := make(template.FuncMap)
 
+	// request scoped data
+	data := make(map[string]interface{})
+
+	// pass context data to view
+	for k, v := range c.Keys {
+		data[k] = v
+	}
+
+	// object from action is passed to View as ViewData
+	data["errors"] = c.Errors
+	data["model"] = obj
+
+	// check if we use translations
+	translator := c.app.Translator
 	if translator != nil {
 		// reload translations during development
 		if c.AppOptions().Env == "development" {
@@ -760,7 +766,7 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 		}
 	}
 
-	r = c.app.ViewEngine.Renderer(name, obj, helpers)
+	r := c.app.ViewEngine.Renderer(name, data, helpers)
 
 	// render
 	c.Render(code, r)
@@ -885,21 +891,24 @@ func (c *Context) Value(key interface{}) interface{} {
 
 // ServeError serves error message with given code and message
 // the error is served with text/plain mime type
-func (c *Context) ServeError(code int, message []byte) {
+func (c *Context) ServeError(code int, err error) {
 	c.Response.WriteHeader(code)
 	c.Next()
 	if c.Response.Written() {
 		return
 	}
 	if c.app.errorHandler != nil && code == http.StatusInternalServerError {
+		c.Error(err)
 		c.app.errorHandler(c)
 	} else if c.app.methodNotAllowedHandler != nil && code == http.StatusMethodNotAllowed {
+		c.Error(err)
 		c.app.methodNotAllowedHandler(c)
 	} else if c.app.notFoundHandler != nil && code == http.StatusNotFound {
+		c.Error(err)
 		c.app.notFoundHandler(c)
 	} else if c.Response.Status() == code {
 		c.Response.Header()["Content-Type"] = []string{"text/plain"}
-		c.Response.Write(message)
+		c.Response.Write([]byte(err.Error()))
 		return
 	}
 	c.Response.WriteHeaderNow()

@@ -2,7 +2,7 @@ package flow
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net"
 	"net/http"
 	"os"
@@ -210,7 +210,6 @@ func (a *App) stop() error {
 
 // Stop issues interupt signal
 func (a *App) Stop() error {
-	fmt.Println("stop pocetak")
 	// get current process
 	proc, err := os.FindProcess(os.Getpid())
 	if err != nil {
@@ -265,13 +264,13 @@ func (a *App) handleHTTPRequest(c *Context) {
 	if a.HandleMethodNotAllowed {
 		if allow := a.router.allowed(path, httpMethod); len(allow) > 0 {
 			c.handlers = a.router.Handlers
-			c.ServeError(http.StatusMethodNotAllowed, []byte(a.Config.StringDefault("405Body", default405Body)))
+			c.ServeError(http.StatusMethodNotAllowed, errors.New(a.Config.StringDefault("405Body", default405Body)))
 			return
 		}
 	}
 
 	c.handlers = a.router.Handlers
-	c.ServeError(http.StatusNotFound, []byte(a.Config.StringDefault("404Body", default404Body)))
+	c.ServeError(http.StatusNotFound, errors.New(a.Config.StringDefault("404Body", default404Body)))
 }
 
 func (a *App) allocateContext() *Context {

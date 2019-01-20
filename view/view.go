@@ -45,11 +45,11 @@ func DefaultFileHandler() FileHandler {
 		// Get the absolute path of the root template
 		path, err := filepath.Abs(config.Root + string(os.PathSeparator) + tplFile + config.Extension)
 		if err != nil {
-			return "", fmt.Errorf("TemplateEngine path:%v error: %v", path, err)
+			return "", fmt.Errorf("ViewEngine path:%v, error: %v", path, err)
 		}
 		data, err := ioutil.ReadFile(path)
 		if err != nil {
-			return "", fmt.Errorf("TemplateEngine render read name:%v, path:%v, error: %v", tplFile, path, err)
+			return "", fmt.Errorf("ViewEngine render read name:%v, path:%v, error: %v", tplFile, path, err)
 		}
 		return string(data), nil
 	}
