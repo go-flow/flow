@@ -52,7 +52,6 @@ func (e *Engine) executeTemplate(out io.Writer, name string, data map[string]int
 	if val, ok := data["viewMasterTemplate"]; ok {
 		templateMaster = val.(string)
 	}
-	fmt.Println(templateMaster)
 
 	allFuncs := make(template.FuncMap, 0)
 	// viewEngine related functions
