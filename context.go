@@ -728,13 +728,13 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 	// request scoped data
 	data := make(map[string]interface{})
 
-	// pass context data to view
-	for k, v := range c.Keys {
-		data[k] = v
-	}
-
-	// object from action is passed to View as ViewData
+	// pass all context keys to view
+	data["context"] = c.Keys
+	// pass session
+	data["session"] = c.Session().Values()
+	// pass all context Errors
 	data["errors"] = c.Errors
+	// object from action is passed to View as model
 	data["model"] = obj
 
 	// check if we use translations
