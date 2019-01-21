@@ -5,6 +5,12 @@ package flow
 // Controller is used on app#RegisterController
 type Controller interface {
 
-	// Routes returns list of controller routes
+	// Routes returns controller action routing
 	Routes() *Router
+}
+
+// ControllerPrefixer allows to customize Controller prefix
+// for controller action routing
+type ControllerPrefixer interface {
+	Prefix() string
 }
