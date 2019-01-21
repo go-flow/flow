@@ -119,6 +119,11 @@ func (a *App) Attach(prefix string, router *Router) {
 	a.router.Attach(prefix, router)
 }
 
+// RegisterController registers application controller
+func (a *App) RegisterController(ctrl Controller) {
+	a.router.Attach("/", ctrl.Routes())
+}
+
 // MethodNotAllowedHandler is Handler where message and error can be personalized
 // to be in line with application design and logic
 func (a *App) MethodNotAllowedHandler(handler HandlerFunc) {
