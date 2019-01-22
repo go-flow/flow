@@ -162,8 +162,6 @@ func (s *StructInjector) String() (trace string) {
 }
 
 // Inject accepts a destination struct and any optional context value(s),
-// hero and mvc takes only one context value and this is the `context.Contex`.
-// It applies the bindings to the "dest" struct. It calls the InjectElem.
 func (s *StructInjector) Inject(dest interface{}, ctx ...reflect.Value) {
 	if dest == nil {
 		return

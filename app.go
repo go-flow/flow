@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reflect"
 	"strings"
 	"sync"
 	"syscall"
@@ -138,7 +139,13 @@ func (a *App) Register(value interface{}) {
 	injector.Inject(value)
 
 	a.dependencies.Add(value)
+}
 
+// InjectDeps accepts a destination struct and any optional context value(s),
+// and injects registered dependencies to the destination object
+func (a *App) InjectDeps(dest interface{}, ctx ...reflect.Value) {
+	injector := di.Struct(dest, a.dependencies...)
+	injector.Inject(dest, ctx...)
 }
 
 // RegisterController registers application controller
