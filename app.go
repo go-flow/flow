@@ -121,6 +121,9 @@ func (a *App) Attach(prefix string, router *Router) {
 
 // RegisterController registers application controller
 func (a *App) RegisterController(ctrl Controller) {
+	if i, ok := ctrl.(ControllerIniter); ok {
+		i.Init(a)
+	}
 	prefix := "/"
 	if p, ok := ctrl.(ControllerPrefixer); ok {
 		prefix = p.Prefix()

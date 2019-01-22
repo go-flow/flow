@@ -14,3 +14,9 @@ type Controller interface {
 type ControllerPrefixer interface {
 	Prefix() string
 }
+
+// ControllerIniter allows to init controller
+//
+type ControllerIniter interface {
+	Init(app *App)
+}
