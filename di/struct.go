@@ -176,7 +176,6 @@ func (s *StructInjector) Inject(dest interface{}, ctx ...reflect.Value) {
 // InjectElem same as `Inject` but accepts a reflect.Value and bind the necessary fields directly.
 func (s *StructInjector) InjectElem(destElem reflect.Value, ctx ...reflect.Value) {
 	for _, f := range s.fields {
-		//fmt.Printf("\n%#v\n", f)
 		f.Object.Assign(ctx, func(v reflect.Value) {
 			destElem.FieldByIndex(f.FieldIndex).Set(v)
 		})

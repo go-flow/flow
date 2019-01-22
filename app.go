@@ -126,7 +126,19 @@ func (a *App) Attach(prefix string, router *Router) {
 
 // Register appends one or more values as dependecies
 func (a *App) Register(value interface{}) {
+	if a.dependencies.Len() == 0 {
+		a.dependencies.Add(value)
+		return
+	}
+
+	// create injector
+	injector := di.Struct(value, a.dependencies...)
+
+	// inject dependencies to value
+	injector.Inject(value)
+
 	a.dependencies.Add(value)
+
 }
 
 // RegisterController registers application controller
