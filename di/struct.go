@@ -71,7 +71,7 @@ func MakeStructInjector(v reflect.Value, values ...reflect.Value) *StructInjecto
 			b := MakeBindObject(val)
 
 			if b.IsAssignable(f.Type) {
-				fmt.Printf("bind the object to the field: %s at index: %#v and type: %s\n", f.Name, f.Index, f.Type.String())
+				// fmt.Printf("bind the object to the field: %s at index: %#v and type: %s\n", f.Name, f.Index, f.Type.String())
 				s.fields = append(s.fields, &targetStructField{
 					FieldIndex: f.Index,
 					Object:     &b,
