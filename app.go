@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/go-flow/flow/di"
 )
 
 // New returns an App instance with default configuration.
@@ -45,8 +47,9 @@ func NewWithOptions(opts Options) *App {
 	}
 
 	app := &App{
-		Options: opts,
-		router:  r,
+		Options:      opts,
+		router:       r,
+		dependencies: di.NewValues(),
 	}
 
 	//context pool allocation
@@ -66,6 +69,8 @@ type App struct {
 	methodNotAllowedHandler HandlerFunc
 	notFoundHandler         HandlerFunc
 	errorHandler            HandlerFunc
+
+	dependencies di.Values
 }
 
 // Use appends one or more middlewares onto the Router stack.
@@ -119,15 +124,38 @@ func (a *App) Attach(prefix string, router *Router) {
 	a.router.Attach(prefix, router)
 }
 
+// Register appends one or more values as dependecies
+func (a *App) Register(value interface{}) {
+	a.dependencies.Add(value)
+}
+
 // RegisterController registers application controller
 func (a *App) RegisterController(ctrl Controller) {
+	// check if controller imlements initer
 	if i, ok := ctrl.(ControllerIniter); ok {
 		i.Init(a)
 	}
+
+	// set prefix to default
 	prefix := "/"
+	// check if controller implements prefixer
 	if p, ok := ctrl.(ControllerPrefixer); ok {
 		prefix = p.Prefix()
 	}
+
+	//check if we have any dependencies registered
+	if a.dependencies.Len() == 0 {
+		// we dont have any dependencies defined
+		a.router.Attach(prefix, ctrl.Routes())
+		return
+	}
+
+	// get DI injector
+	injector := di.Struct(ctrl, a.dependencies...)
+
+	// inject dependencies to controller
+	injector.Inject(ctrl)
+
 	a.router.Attach(prefix, ctrl.Routes())
 }
 
