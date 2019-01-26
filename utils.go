@@ -2,9 +2,11 @@ package flow
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 func filterFlags(content string) string {
@@ -82,4 +84,26 @@ func byteCountBinary(b int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %ciB", float64(b)/float64(div), "KMGTPE"[exp])
+}
+
+func loadPartials(viewsRoot, partialsRoot, ext string) ([]string, error) {
+	dirname := path.Join(viewsRoot, partialsRoot)
+	files, err := ioutil.ReadDir(dirname)
+	if err != nil {
+		return nil, err
+	}
+	partials := []string{}
+	for _, f := range files {
+		partial := f.Name()
+		if strings.HasSuffix(partial, ext) {
+			// remove ext from file
+			partial = strings.TrimSuffix(partial, ext)
+			// join file with folder name
+			partial = path.Join(partialsRoot, partial)
+
+			// add to partials
+			partials = append(partials, partial)
+		}
+	}
+	return partials, nil
 }

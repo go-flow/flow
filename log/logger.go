@@ -1,4 +1,4 @@
-package flow
+package log
 
 import (
 	"fmt"
@@ -45,10 +45,10 @@ func (l defaultLogger) WithFields(m map[string]interface{}) Logger {
 	return defaultLogger{l.FieldLogger.WithFields(m)}
 }
 
-// NewLogger based on the specified log level.
+// New based on the specified log level.
 // This logger will log to the STDOUT in a human readable,
 // but parseable form.
-func NewLogger(level string) Logger {
+func New(level string) Logger {
 	l := logrus.New()
 	l.Level, _ = logrus.ParseLevel(level)
 	l.Formatter = &logrus.JSONFormatter{}
@@ -56,13 +56,13 @@ func NewLogger(level string) Logger {
 	return defaultLogger{l}
 }
 
-// NewLoggerWithFormatter  creates logger instance
+// NewWithFormatter  creates logger instance
 // based on the specified log level and formatter
 //
 //This logger will log to the STDOUT in a human readable,
 // but parseable form.
 // Supported formatters are `text` and `json`
-func NewLoggerWithFormatter(level, formatter string) Logger {
+func NewWithFormatter(level, formatter string) Logger {
 	l := logrus.New()
 	l.Level, _ = logrus.ParseLevel(level)
 	switch strings.ToLower(formatter) {

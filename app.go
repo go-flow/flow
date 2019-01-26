@@ -13,18 +13,11 @@ import (
 	"syscall"
 
 	"github.com/go-flow/flow/di"
-	"github.com/go-flow/flow/render/view"
-	"github.com/go-flow/flow/sessions"
 )
 
 // App -
 type App struct {
 	Options
-
-	Logger       Logger
-	SessionStore sessions.Store
-	ViewEngine   view.Engine
-	Translator   *Translator
 
 	router *Router
 	pool   sync.Pool
@@ -44,27 +37,11 @@ func New() *App {
 // NewWithOptions creates new application instance
 // with given Application Options object
 func NewWithOptions(opts Options) *App {
+
+	opts = optionsWithDefault(opts)
+
 	// create application router
 	r := NewRouter()
-
-	// configure logger
-	logger := NewLoggerWithFormatter(opts.LogLevel, opts.LogFormat)
-
-	if opts.UseSession {
-		// session management configuration
-	}
-
-	if opts.UseViewEngine {
-		// viewEngine configuration
-	}
-
-	if opts.UseI18n {
-		// translation configuration
-	}
-
-	if opts.UsePanicRecovery {
-		r.Use(PanicRecovery())
-	}
 
 	if opts.UseRequestLogger {
 		r.Use(RequestLogger())
@@ -76,7 +53,6 @@ func NewWithOptions(opts Options) *App {
 
 	app := &App{
 		Options:   opts,
-		Logger:    logger,
 		router:    r,
 		container: di.NewContainer(),
 	}

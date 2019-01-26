@@ -15,6 +15,7 @@ import (
 
 	"github.com/go-flow/flow/binding"
 	"github.com/go-flow/flow/i18n"
+	"github.com/go-flow/flow/log"
 	"github.com/go-flow/flow/render"
 )
 
@@ -41,7 +42,7 @@ type Context struct {
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
 
-	logger Logger
+	logger log.Logger
 }
 
 /************************************/
@@ -126,7 +127,7 @@ func (c *Context) AbortWithError(code int, err error) {
 /************************************/
 
 // Logger gets application Logger instance
-func (c *Context) Logger() Logger {
+func (c *Context) Logger() log.Logger {
 	if c.logger != nil {
 		return c.logger
 	}
@@ -658,6 +659,7 @@ func (c *Context) requestHeader(key string) string {
 /************************************/
 /******** RESPONSE RENDERING ********/
 /************************************/
+
 // Status sets the HTTP response code.
 func (c *Context) Status(code int) {
 	c.Response.WriteHeader(code)
