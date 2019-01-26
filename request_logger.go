@@ -3,6 +3,8 @@ package flow
 import (
 	"time"
 
+	"github.com/go-flow/flow/log"
+
 	"github.com/rs/xid"
 )
 
@@ -29,21 +31,21 @@ func RequestLogger() HandlerFunc {
 
 		c.Response.Header().Add("X-Request-ID", requestID)
 
-		c.LogField("request_id", requestID)
+		//c.LogField("request_id", requestID)
+		c.LogFields(log.String("request_id", requestID))
 
 		//execute next handler in chain
 		c.Next()
 
-		c.LogFields(map[string]interface{}{
-			//"request_id": requestID,
-			"status":     c.Response.Status(),
-			"method":     c.Request.Method,
-			"path":       c.Request.URL.String(),
-			"client_ip":  c.ClientIP(),
-			"duration":   time.Since(start).String(),
-			"human_size": byteCountDecimal(int64(c.Response.Size())),
-			"size":       c.Response.Size(),
-		})
+		c.LogFields(
+			log.Int("status", c.Response.Status()),
+			log.String("method", c.Request.Method),
+			log.String("path", c.Request.URL.String()),
+			log.String("client_ip", c.ClientIP()),
+			log.Duration("duration", time.Since(start)),
+			log.String("human_size", byteCountDecimal(int64(c.Response.Size()))),
+			log.Int("size", c.Response.Size()),
+		)
 		c.Logger().Info("request-logger")
 	}
 }

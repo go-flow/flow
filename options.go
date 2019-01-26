@@ -13,8 +13,7 @@ const (
 	defaultName = "FlowApp"
 	defaultAddr = "0.0.0.0:3000"
 
-	defaultLogLevel  = "debug"
-	defaultLogFormat = "text"
+	defaultLogLevel = "debug"
 
 	defaultRedirectTrailingSlash  = true
 	defaultRedirectFixedPath      = false
@@ -52,8 +51,7 @@ type Options struct {
 	Name string
 	Addr string
 
-	LogLevel  string
-	LogFormat string
+	LogLevel string
 
 	RedirectTrailingSlash  bool
 	RedirectFixedPath      bool
@@ -100,7 +98,6 @@ func NewOptions() Options {
 		Name:                   defaultName,
 		Addr:                   defaultAddr,
 		LogLevel:               defaultLogLevel,
-		LogFormat:              defaultLogFormat,
 		RedirectTrailingSlash:  defaultRedirectTrailingSlash,
 		RedirectFixedPath:      defaultRedirectFixedPath,
 		HandleMethodNotAllowed: defaultHandleMethodNotAllowed,
@@ -131,7 +128,7 @@ func NewOptions() Options {
 func optionsWithDefault(opts Options) Options {
 	//configure logger
 	if opts.Logger == nil {
-		opts.Logger = log.NewWithFormatter(opts.LogLevel, opts.LogFormat)
+		opts.Logger = log.New(opts.LogLevel, opts.Env)
 	}
 
 	//configure session store
@@ -145,7 +142,7 @@ func optionsWithDefault(opts Options) Options {
 	if opts.UseViewEngine && opts.ViewEngine == nil {
 		partials, err := loadPartials(opts.ViewsRoot, opts.ViewsPartialsRoot, opts.ViewsExt)
 		if err != nil {
-			opts.Logger.Fatal(err)
+			opts.Logger.Fatal(err.Error())
 		}
 		opts.ViewEngine = view.NewHTMLEngine(view.Config{
 			Root:         opts.ViewsRoot,
@@ -162,7 +159,7 @@ func optionsWithDefault(opts Options) Options {
 	if opts.UseTranslator && opts.Translator == nil {
 		t, err := NewTranslator(opts.TranslatorLocalesRoot, opts.TranslatorDefaultLang)
 		if err != nil {
-			opts.Logger.Fatal(err)
+			opts.Logger.Fatal(err.Error())
 		}
 		opts.Translator = t
 	}

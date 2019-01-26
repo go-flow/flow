@@ -3,6 +3,7 @@ package flow
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -195,7 +196,7 @@ func (a *App) ErrorHandler(handler HandlerFunc) {
 // interrupt and kill signals and will attempt to stop the application
 // gracefully.
 func (a *App) Serve() error {
-	a.Logger.Infof("Starting Application at %s", a.Addr)
+	a.Logger.Info(fmt.Sprintf("Starting Application at %s", a.Addr))
 	// create http server
 	srv := http.Server{
 		Handler: a,
@@ -209,11 +210,11 @@ func (a *App) Serve() error {
 		<-c
 		a.Logger.Info("Shutting down application")
 		if err := a.stop(); err != nil {
-			a.Logger.Error(err)
+			a.Logger.Error(err.Error())
 		}
 
 		if err := srv.Shutdown(context.Background()); err != nil {
-			a.Logger.Error(err)
+			a.Logger.Error(err.Error())
 		}
 	}()
 

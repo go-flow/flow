@@ -127,7 +127,8 @@ func TestRouterMiddlewareAbort(t *testing.T) {
 	})
 	router.Use(func(c *Context) {
 		signature += "C"
-		c.AbortWithStatus(http.StatusUnauthorized)
+		c.Status(http.StatusUnauthorized)
+		c.Abort()
 		c.Next()
 		signature += "D"
 	})
@@ -151,7 +152,8 @@ func TestRouterMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 	router.Use(func(c *Context) {
 		signature += "A"
 		c.Next()
-		c.AbortWithStatus(http.StatusGone)
+		c.Status(http.StatusGone)
+		c.Abort()
 		signature += "B"
 
 	})
@@ -173,7 +175,8 @@ func TestRouterMiddlewareFailHandlersChain(t *testing.T) {
 	router := New()
 	router.Use(func(context *Context) {
 		signature += "A"
-		context.AbortWithError(http.StatusInternalServerError, errors.New("foo"))
+
+		context.ServeError(http.StatusInternalServerError, errors.New("foo"))
 	})
 	router.Use(func(context *Context) {
 		signature += "B"

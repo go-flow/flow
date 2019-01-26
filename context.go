@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"go.uber.org/zap"
 	"bytes"
 	"errors"
 	"html/template"
@@ -120,22 +121,12 @@ func (c *Context) Logger() log.Logger {
 	return c.app.Logger
 }
 
-// LogField adds the key/value pair onto the Logger to be printed out
-// as part of the request logging.
+// LogFields adds adds structured context to context Logger
 //
 // This allows you to easily add things
 // like metrics (think DB times) to your request.
-func (c *Context) LogField(key string, value interface{}) {
-	c.logger = c.Logger().WithField(key, value)
-}
-
-// LogFields adds the key/value pairs onto the Logger to be printed out
-// as part of the request logging.
-//
-// This allows you to easily add things
-// like metrics (think DB times) to your request.
-func (c *Context) LogFields(values map[string]interface{}) {
-	c.logger = c.Logger().WithFields(values)
+func (c *Context) LogFields(fields ...zap.Field) {
+	c.logger = c.Logger().With(fields...)
 }
 
 // AppOptions returns copy of application Options object
@@ -719,7 +710,7 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 		// define translation function
 		transFunc, err := i18n.Tfunc(langs[0], langs[1:]...)
 		if err != nil {
-			c.Logger().Warn(err)
+			c.Logger().Warn(err.Error())
 			c.Logger().Warn("Your locale files are probably empty or missing")
 		}
 
@@ -845,8 +836,8 @@ func (c *Context) Value(key interface{}) interface{} {
 // ServeError serves error message with given code and message
 // the error is served with text/plain mime type
 func (c *Context) ServeError(code int, err error) {
-	// log error
-	c.Logger().Error(err)
+	// abord context execution
+	c.Abort()
 	// store error in context error stack
 	c.Error(err)
 
