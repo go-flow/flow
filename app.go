@@ -12,21 +12,20 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/gorilla/sessions"
 	"github.com/go-flow/flow/di"
 	"github.com/go-flow/flow/render/view"
+	"github.com/go-flow/flow/sessions"
 )
 
 // App -
 type App struct {
 	Options
 
-	
-	Logger Logger
+	Logger       Logger
 	SessionStore sessions.Store
-	ViewEngine view.Engine
-	Translator *Translator
-	
+	ViewEngine   view.Engine
+	Translator   *Translator
+
 	router *Router
 	pool   sync.Pool
 
@@ -34,12 +33,12 @@ type App struct {
 	notFoundHandler         HandlerFunc
 	errorHandler            HandlerFunc
 
-	dependencies di.Container
+	container di.Container
 }
 
 // New returns an App instance with default configuration.
 func New() *App {
-	return NewWithOptions(Options{})
+	return NewWithOptions(NewOptions())
 }
 
 // NewWithOptions creates new application instance
@@ -47,6 +46,21 @@ func New() *App {
 func NewWithOptions(opts Options) *App {
 	// create application router
 	r := NewRouter()
+
+	// configure logger
+	logger := NewLoggerWithFormatter(opts.LogLevel, opts.LogFormat)
+
+	if opts.UseSession {
+		// session management configuration
+	}
+
+	if opts.UseViewEngine {
+		// viewEngine configuration
+	}
+
+	if opts.UseI18n {
+		// translation configuration
+	}
 
 	if opts.UsePanicRecovery {
 		r.Use(PanicRecovery())
@@ -61,9 +75,10 @@ func NewWithOptions(opts Options) *App {
 	}
 
 	app := &App{
-		Options:      opts,
-		router:       r,
-		dependencies: di.NewValues(),
+		Options:   opts,
+		Logger:    logger,
+		router:    r,
+		container: di.NewContainer(),
 	}
 
 	//context pool allocation
@@ -127,24 +142,24 @@ func (a *App) Attach(prefix string, router *Router) {
 
 // Register appends one or more values as dependecies
 func (a *App) Register(value interface{}) {
-	if a.dependencies.Len() == 0 {
-		a.dependencies.Add(value)
+	if a.container.Len() == 0 {
+		a.container.Add(value)
 		return
 	}
 
 	// create injector
-	injector := di.Struct(value, a.dependencies...)
+	injector := di.Struct(value, a.container...)
 
 	// inject dependencies to value
 	injector.Inject(value)
 
-	a.dependencies.Add(value)
+	a.container.Add(value)
 }
 
 // InjectDeps accepts a destination struct and any optional context value(s),
 // and injects registered dependencies to the destination object
 func (a *App) InjectDeps(dest interface{}, ctx ...reflect.Value) {
-	injector := di.Struct(dest, a.dependencies...)
+	injector := di.Struct(dest, a.container...)
 	injector.Inject(dest, ctx...)
 }
 
@@ -163,14 +178,14 @@ func (a *App) RegisterController(ctrl Controller) {
 	}
 
 	//check if we have any dependencies registered
-	if a.dependencies.Len() == 0 {
+	if a.container.Len() == 0 {
 		// we dont have any dependencies defined
 		a.router.Attach(prefix, ctrl.Routes())
 		return
 	}
 
 	// get DI injector
-	injector := di.Struct(ctrl, a.dependencies...)
+	injector := di.Struct(ctrl, a.container...)
 
 	// inject dependencies to controller
 	injector.Inject(ctrl)
@@ -323,13 +338,13 @@ func (a *App) handleHTTPRequest(c *Context) {
 	if a.HandleMethodNotAllowed {
 		if allow := a.router.allowed(path, httpMethod); len(allow) > 0 {
 			c.handlers = a.router.Handlers
-			c.ServeError(http.StatusMethodNotAllowed, errors.New(default405Body)
+			c.ServeError(http.StatusMethodNotAllowed, errors.New(default405Body))
 			return
 		}
 	}
 
 	c.handlers = a.router.Handlers
-	c.ServeError(http.StatusNotFound, errors.New(default404Body)
+	c.ServeError(http.StatusNotFound, errors.New(default404Body))
 }
 
 func (a *App) allocateContext() *Context {

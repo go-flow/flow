@@ -237,7 +237,7 @@ func (r *Router) createStaticHandler(relativePath string, fs http.FileSystem) Ha
 		// Check if file exists and/or if we have permission to access it
 		if _, err := fs.Open(file); err != nil {
 			fmt.Println(err)
-			c.ServeError(http.StatusNotFound, errors.New(c.app.Config.StringDefault("404Body", default404Body)))
+			c.ServeError(http.StatusNotFound, errors.New(c.app.Body404))
 			return
 		}
 

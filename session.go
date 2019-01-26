@@ -3,7 +3,7 @@ package flow
 import (
 	"net/http"
 
-	"github.com/gorilla/sessions"
+	"github.com/go-flow/flow/sessions"
 )
 
 // Session wraps sesions in cleaner and easy to use sessions

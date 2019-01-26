@@ -151,11 +151,6 @@ func (c *Context) LogFields(values map[string]interface{}) {
 	c.logger = c.Logger().WithFields(values)
 }
 
-// AppConfig returns copy of application config object
-func (c *Context) AppConfig() Config {
-	return c.app.Config
-}
-
 // AppOptions returns copy of application Options object
 func (c *Context) AppOptions() Options {
 	return c.app.Options
@@ -663,18 +658,6 @@ func (c *Context) requestHeader(key string) string {
 /************************************/
 /******** RESPONSE RENDERING ********/
 /************************************/
-func bodyAllowedForStatus(status int) bool {
-	switch {
-	case status >= 100 && status <= 199:
-		return false
-	case status == http.StatusNoContent:
-		return false
-	case status == http.StatusNotModified:
-		return false
-	}
-	return true
-}
-
 // Status sets the HTTP response code.
 func (c *Context) Status(code int) {
 	c.Response.WriteHeader(code)
@@ -699,12 +682,6 @@ func (c *Context) GetHeader(key string) string {
 // Render writes the response headers and calls render.Render to render data.
 func (c *Context) Render(code int, r render.Renderer) {
 	c.Status(code)
-	if !bodyAllowedForStatus(code) {
-		r.WriteContentType(c.Response)
-		c.Response.WriteHeaderNow()
-		return
-	}
-
 	if err := r.Render(c.Response); err != nil {
 		panic(err)
 	}
@@ -759,7 +736,12 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 		}
 	}
 
-	r := c.app.ViewEngine.Renderer(name, data, helpers)
+	r := render.HTML{
+		Engine:  c.app.ViewEngine,
+		Name:    name,
+		Data:    data,
+		Helpers: helpers,
+	}
 
 	// render
 	c.Render(code, r)
@@ -778,17 +760,13 @@ func (c *Context) XML(code int, obj interface{}) {
 }
 
 // String writes the given string into the response body.
-func (c *Context) String(code int, format string, values ...interface{}) {
-	c.Render(code, render.String{Format: format, Data: values})
+func (c *Context) String(code int, data string) {
+	c.Render(code, render.Text{Data: data})
 }
 
 // Redirect returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
-	c.Render(-1, render.Redirect{
-		Code:     code,
-		Location: location,
-		Request:  c.Request,
-	})
+	http.Redirect(c.Response, c.Request, location, code)
 }
 
 // Data writes some data into the body stream and updates the HTTP code.
