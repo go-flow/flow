@@ -699,7 +699,7 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 	// pass session
 	data["session"] = c.Session().Values()
 	// pass all context Errors
-	data["errors"] = c.Errors
+	data["errors"] = c.Errors.Errors()
 	// object from action is passed to View as model
 	data["model"] = obj
 
