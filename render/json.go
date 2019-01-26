@@ -1,7 +1,7 @@
 package render
 
 import (
-	"net/http"
+	"io"
 
 	"github.com/go-flow/flow/internal/json"
 )
@@ -13,13 +13,12 @@ type JSON struct {
 	Data interface{}
 }
 
-// Render JSON content with application/json content type
-func (r JSON) Render(w http.ResponseWriter) error {
+// Render JSON content to io.Writer
+func (r JSON) Render(out io.Writer) error {
 	data, err := json.Marshal(r.Data)
 	if err != nil {
 		return err
 	}
-	writeContentType(w, jsonContentType)
-	w.Write(data)
+	out.Write(data)
 	return nil
 }

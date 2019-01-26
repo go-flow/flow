@@ -2,7 +2,7 @@ package render
 
 import (
 	"html/template"
-	"net/http"
+	"io"
 
 	"github.com/go-flow/flow/render/view"
 )
@@ -18,7 +18,6 @@ type HTML struct {
 }
 
 // Render writes HTML content to response writer
-func (r HTML) Render(w http.ResponseWriter) error {
-	writeContentType(w, htmlContentType)
-	return r.Engine.Render(w, r.Name, r.Data, r.Helpers)
+func (r HTML) Render(out io.Writer) error {
+	return r.Engine.Render(out, r.Name, r.Data, r.Helpers)
 }

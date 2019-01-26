@@ -2,7 +2,6 @@ package render
 
 import (
 	"io"
-	"net/http"
 )
 
 // Text renders content to Text format
@@ -12,9 +11,8 @@ type Text struct {
 
 var textContentType = []string{"text/plain; charset=utf-8"}
 
-// Render content as Text Plain format to ResponseWriter
-func (r Text) Render(w http.ResponseWriter) error {
-	writeContentType(w, textContentType)
-	_, err := io.WriteString(w, r.Data)
+// Render Plain Text io.Writer
+func (r Text) Render(out io.Writer) error {
+	_, err := io.WriteString(out, r.Data)
 	return err
 }

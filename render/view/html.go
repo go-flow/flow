@@ -45,6 +45,13 @@ func (e *HTMLEngine) Render(out io.Writer, name string, data map[string]interfac
 	return e.RenderTemplate(out, name, data, viewFuncs, useMaster)
 }
 
+// SetViewHelpers sets view helper functions to Engine
+func (e *HTMLEngine) SetViewHelpers(viewFuncs template.FuncMap) {
+	for name, fn := range viewFuncs {
+		e.config.Funcs[name] = fn
+	}
+}
+
 // RenderTemplate renders HTML Template to output writer
 func (e *HTMLEngine) RenderTemplate(out io.Writer, name string, data map[string]interface{}, viewFuncs template.FuncMap, useMaster bool) error {
 	var tpl *template.Template

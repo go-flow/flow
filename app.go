@@ -47,6 +47,10 @@ func NewWithOptions(opts Options) *App {
 		r.Use(RequestLogger())
 	}
 
+	if opts.UsePanicRecovery {
+		r.Use(PanicRecovery())
+	}
+
 	if opts.ServeStatic {
 		r.Static(opts.StaticPath, opts.StaticDir)
 	}

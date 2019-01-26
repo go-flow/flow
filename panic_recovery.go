@@ -3,7 +3,6 @@ package flow
 import (
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"strings"
 )
@@ -15,11 +14,12 @@ var (
 	slash     = []byte("/")
 )
 
-// PanicRecovery returns a middleware that recovers from any panics and writes a 500 if there was one.
+// PanicRecovery returns a middleware that recovers from any panics and serves error response
 func PanicRecovery() HandlerFunc {
 	return func(c *Context) {
 		defer func() {
 			if err := recover(); err != nil {
+
 				var brokenPipe bool
 				if ne, ok := err.(*net.OpError); ok {
 					if se, ok := ne.Err.(*os.SyscallError); ok {
@@ -28,14 +28,6 @@ func PanicRecovery() HandlerFunc {
 						}
 					}
 				}
-
-				httprequest, _ := httputil.DumpRequest(c.Request, false)
-
-				l := c.Logger().WithFields(map[string]interface{}{
-					"request": string(httprequest),
-					"err":     err,
-				})
-				l.Error("panic-recovery")
 
 				if brokenPipe {
 					c.Error(err.(error))

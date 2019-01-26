@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"bytes"
 	"errors"
 	"html/template"
 	"io"
@@ -105,21 +106,6 @@ func (c *Context) IsAborted() bool {
 // Abort prevents pending handlers from being called. Note that this will not stop the current handler.
 func (c *Context) Abort() {
 	c.index = abortIndex
-}
-
-// AbortWithStatus calls `Abort()` and writes the headers with the specified status code.
-func (c *Context) AbortWithStatus(code int) {
-	c.Status(code)
-	c.Response.WriteHeaderNow()
-	c.Abort()
-}
-
-// AbortWithError calls `AbortWithStatus()` and `Error()` internally.
-//
-// This method stops the chain, writes the status code and pushes the specified error to `c.Errors`.
-func (c *Context) AbortWithError(code int, err error) {
-	c.Error(err)
-	c.AbortWithStatus(code)
 }
 
 /************************************/
@@ -535,7 +521,7 @@ func (c *Context) BindQuery(obj interface{}) error {
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindURI(obj interface{}) error {
 	if err := c.ShouldBindURI(obj); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		c.ServeError(http.StatusBadRequest, err)
 		return err
 	}
 	return nil
@@ -546,7 +532,7 @@ func (c *Context) BindURI(obj interface{}) error {
 // See the binding package.
 func (c *Context) MustBindWith(obj interface{}, b binding.Binder) error {
 	if err := c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		c.ServeError(http.StatusBadRequest, err)
 		return err
 	}
 	return nil
@@ -683,10 +669,15 @@ func (c *Context) GetHeader(key string) string {
 
 // Render writes the response headers and calls render.Render to render data.
 func (c *Context) Render(code int, r render.Renderer) {
-	c.Status(code)
-	if err := r.Render(c.Response); err != nil {
-		panic(err)
+	var tpl bytes.Buffer
+	if err := r.Render(&tpl); err != nil {
+		c.ServeError(http.StatusInternalServerError, err)
+		return
 	}
+
+	c.Status(code)
+	c.Response.Write(tpl.Bytes())
+
 }
 
 // HTML renders the HTTP template specified by its file name.
@@ -694,7 +685,7 @@ func (c *Context) Render(code int, r render.Renderer) {
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj interface{}) {
 	if c.app.ViewEngine == nil {
-		c.AbortWithError(http.StatusInternalServerError, errors.New("application view engine not enabled"))
+		c.ServeError(http.StatusInternalServerError, errors.New("application view engine not enabled"))
 		return
 	}
 	// request scoped view Helpers
@@ -772,20 +763,9 @@ func (c *Context) Redirect(code int, location string) {
 }
 
 // Data writes some data into the body stream and updates the HTTP code.
-func (c *Context) Data(code int, contentType string, data []byte) {
+func (c *Context) Data(code int, data []byte) {
 	c.Render(code, render.Data{
-		ContentType: contentType,
-		Data:        data,
-	})
-}
-
-// DataFromReader writes the specified reader into the body stream and updates the HTTP code.
-func (c *Context) DataFromReader(code int, contentLength int64, contentType string, reader io.Reader, extraHeaders map[string]string) {
-	c.Render(code, render.Reader{
-		Headers:       extraHeaders,
-		ContentType:   contentType,
-		ContentLength: contentLength,
-		Reader:        reader,
+		Data: data,
 	})
 }
 
@@ -870,12 +850,10 @@ func (c *Context) ServeError(code int, err error) {
 	// store error in context error stack
 	c.Error(err)
 
-	// write header code
-	c.Response.WriteHeader(code)
-
 	if c.Response.Written() {
 		return
 	}
+
 	if c.app.errorHandler != nil && code == http.StatusInternalServerError {
 		c.app.errorHandler(c)
 	} else if c.app.methodNotAllowedHandler != nil && code == http.StatusMethodNotAllowed {

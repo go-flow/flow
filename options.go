@@ -89,6 +89,8 @@ type Options struct {
 	SessionStore sessions.Store
 	ViewEngine   view.Engine
 	Translator   *Translator
+
+	AppConfig interface{}
 }
 
 // NewOptions returns a new Options instance with default configuration
