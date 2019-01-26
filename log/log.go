@@ -33,10 +33,10 @@ func (l zapWrapLogger) With(fields ...zap.Field) Logger {
 // logLevel can be: `debug`, `info`, `warn`, `error`, `dpanic`, `panic`, `fatal`
 // mode can be `production` or `development`
 func New(logLevel, mode string) Logger {
-	if mode == "production" {
-		return NewProduction(logLevel)
+	if mode == "development" {
+		return NewDevelopment(logLevel)
 	}
-	return NewDevelopment(logLevel)
+	return NewProduction(logLevel)
 }
 
 // NewProduction logger instance
