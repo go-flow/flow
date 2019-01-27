@@ -22,3 +22,8 @@ func (r JSON) Render(out io.Writer) error {
 	out.Write(data)
 	return nil
 }
+
+// ContentType returns contentType for renderer
+func (JSON) ContentType() []string {
+	return jsonContentType
+}

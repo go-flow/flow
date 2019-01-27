@@ -21,3 +21,8 @@ type HTML struct {
 func (r HTML) Render(out io.Writer) error {
 	return r.Engine.Render(out, r.Name, r.Data, r.Helpers)
 }
+
+// ContentType returns contentType for renderer
+func (HTML) ContentType() []string {
+	return htmlContentType
+}

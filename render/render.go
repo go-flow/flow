@@ -9,6 +9,9 @@ import (
 type Renderer interface {
 	// Render writes data to io.Writer
 	Render(io.Writer) error
+
+	// ContentType returns contentType for renderer
+	ContentType() []string
 }
 
 // writeHeaders is helper function for writing headers

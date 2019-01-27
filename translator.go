@@ -141,7 +141,7 @@ func SessionLanguageExtractor(o LanguageExtractorOptions, c *Context) []string {
 func HeaderLanguageExtractor(o LanguageExtractorOptions, c *Context) []string {
 	langs := make([]string, 0)
 	// try to get the language from a header:
-	acceptLang := c.GetHeader("Accept-Language")
+	acceptLang := c.Header("Accept-Language")
 	if acceptLang != "" {
 		langs = append(langs, parseAcceptLanguage(acceptLang)...)
 	}

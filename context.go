@@ -1,7 +1,6 @@
 package flow
 
 import (
-	"go.uber.org/zap"
 	"bytes"
 	"errors"
 	"html/template"
@@ -14,6 +13,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/go-flow/flow/binding"
 	"github.com/go-flow/flow/i18n"
@@ -59,30 +60,7 @@ func (c *Context) reset() {
 	c.Keys = nil
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
-}
-
-// Copy returns a copy of the current context that can be safely used outside the request's scope.
-//
-// This has to be used when the context has to be passed to a goroutine.
-func (c *Context) Copy() *Context {
-	var cp = *c
-	cp.writermem.ResponseWriter = nil
-	cp.Response = &cp.writermem
-	cp.index = abortIndex
-	cp.handlers = nil
-	return &cp
-}
-
-// HandlerName returns the main handler's name. For example if the handler is "handleGetUsers()",
-//
-// this function will return "main.handleGetUsers".
-func (c *Context) HandlerName() string {
-	return nameOfFunction(c.handlers.Last())
-}
-
-// Handler returns the main handler.
-func (c *Context) Handler() HandlerFunc {
-	return c.handlers.Last()
+	c.logger = nil
 }
 
 /************************************/
@@ -99,14 +77,14 @@ func (c *Context) Next() {
 	}
 }
 
-// IsAborted returns true if the current context was aborted.
-func (c *Context) IsAborted() bool {
-	return c.index >= abortIndex
-}
-
 // Abort prevents pending handlers from being called. Note that this will not stop the current handler.
 func (c *Context) Abort() {
 	c.index = abortIndex
+}
+
+// IsAborted returns true if the current context was aborted.
+func (c *Context) IsAborted() bool {
+	return c.index >= abortIndex
 }
 
 /************************************/
@@ -277,23 +255,16 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 /************************************/
 
 // Param returns the value of the URL param.
+//
 // It is a shortcut for c.Params.ByName(key)
-//     router.GET("/user/:id", func(c *gin.Context) {
-//         // a GET request to /user/john
-//         id := c.Param("id") // id == "john"
-//     })
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }
 
 // Query returns the keyed url query value if it exists,
 // otherwise it returns an empty string `("")`.
+//
 // It is shortcut for `c.Request.URL.Query().Get(key)`
-//     GET /path?id=1234&name=Manu&value=
-// 	   c.Query("id") == "1234"
-// 	   c.Query("name") == "Manu"
-// 	   c.Query("value") == ""
-// 	   c.Query("wtf") == ""
 func (c *Context) Query(key string) string {
 	value, _ := c.GetQuery(key)
 	return value
@@ -301,11 +272,8 @@ func (c *Context) Query(key string) string {
 
 // DefaultQuery returns the keyed url query value if it exists,
 // otherwise it returns the specified defaultValue string.
+//
 // See: Query() and GetQuery() for further information.
-//     GET /?name=Manu&lastname=
-//     c.DefaultQuery("name", "unknown") == "Manu"
-//     c.DefaultQuery("id", "none") == "none"
-//     c.DefaultQuery("lastname", "none") == ""
 func (c *Context) DefaultQuery(key, defaultValue string) string {
 	if value, ok := c.GetQuery(key); ok {
 		return value
@@ -316,11 +284,8 @@ func (c *Context) DefaultQuery(key, defaultValue string) string {
 // GetQuery is like Query(), it returns the keyed url query value
 // if it exists `(value, true)` (even when the value is an empty string),
 // otherwise it returns `("", false)`.
+//
 // It is shortcut for `c.Request.URL.Query().Get(key)`
-//     GET /?name=Manu&lastname=
-//     ("Manu", true) == c.GetQuery("name")
-//     ("", false) == c.GetQuery("id")
-//     ("", true) == c.GetQuery("lastname")
 func (c *Context) GetQuery(key string) (string, bool) {
 	if values, ok := c.GetQueryArray(key); ok {
 		return values[0], ok
@@ -376,10 +341,6 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 // GetPostForm is like PostForm(key). It returns the specified key from a POST urlencoded
 // form or multipart form when it exists `(value, true)` (even when the value is an empty string),
 // otherwise it returns ("", false).
-// For example, during a PATCH request to update the user's email:
-//     email=mail@example.com  -->  ("mail@example.com", true) := GetPostForm("email") // set email to "mail@example.com"
-// 	   email=                  -->  ("", true) := GetPostForm("email") // set email to ""
-//                             -->  ("", false) := GetPostForm("email") // do nothing with email
 func (c *Context) GetPostForm(key string) (string, bool) {
 	if values, ok := c.GetPostFormArray(key); ok {
 		return values[0], ok
@@ -481,13 +442,6 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dest string) erro
 }
 
 // Bind checks the Content-Type to select a binding engine automatically,
-// Depending the "Content-Type" header different bindings are used:
-//     "application/json" --> JSON binding
-//     "application/xml"  --> XML binding
-// otherwise --> returns an error.
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
-// It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
 func (c *Context) Bind(obj interface{}) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.MustBindWith(obj, b)
@@ -509,7 +463,6 @@ func (c *Context) BindQuery(obj interface{}) error {
 }
 
 // BindURI binds the passed struct pointer using binding.Uri.
-// It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindURI(obj interface{}) error {
 	if err := c.ShouldBindURI(obj); err != nil {
 		c.ServeError(http.StatusBadRequest, err)
@@ -519,8 +472,6 @@ func (c *Context) BindURI(obj interface{}) error {
 }
 
 // MustBindWith binds the passed struct pointer using the specified binding engine.
-// It will abort the request with HTTP 400 if any error occurs.
-// See the binding package.
 func (c *Context) MustBindWith(obj interface{}, b binding.Binder) error {
 	if err := c.ShouldBindWith(obj, b); err != nil {
 		c.ServeError(http.StatusBadRequest, err)
@@ -530,13 +481,7 @@ func (c *Context) MustBindWith(obj interface{}, b binding.Binder) error {
 }
 
 // ShouldBind checks the Content-Type to select a binding engine automatically,
-// Depending the "Content-Type" header different bindings are used:
-//     "application/json" --> JSON binding
-//     "application/xml"  --> XML binding
-// otherwise --> returns an error
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
-// Like c.Bind() but this method does not set the response status code to 400 and abort if the json is not valid.
+// Depending the "Content-Type" header different bindings are used.
 func (c *Context) ShouldBind(obj interface{}) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.ShouldBindWith(obj, b)
@@ -619,6 +564,14 @@ func (c *Context) ContentType() string {
 	return filterFlags(c.requestHeader("Content-Type"))
 }
 
+// SetContentType sets Content-Type header to response
+func (c *Context) SetContentType(value []string) {
+	header := c.Response.Header()
+	if val := header["Content-Type"]; len(val) == 0 {
+		header["Content-Type"] = value
+	}
+}
+
 // IsWebsocket returns true if the request headers indicate that a websocket
 // handshake is being initiated by the client.
 func (c *Context) IsWebsocket() bool {
@@ -642,10 +595,10 @@ func (c *Context) Status(code int) {
 	c.Response.WriteHeader(code)
 }
 
-// Header is a intelligent shortcut for c.Response.Header().Set(key, value).
+// SetHeader is a intelligent shortcut for c.Response.Header().Set(key, value).
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Response.Header().Del(key)`
-func (c *Context) Header(key, value string) {
+func (c *Context) SetHeader(key, value string) {
 	if value == "" {
 		c.Response.Header().Del(key)
 		return
@@ -653,8 +606,8 @@ func (c *Context) Header(key, value string) {
 	c.Response.Header().Set(key, value)
 }
 
-// GetHeader returns value from request headers.
-func (c *Context) GetHeader(key string) string {
+// Header returns value from request headers.
+func (c *Context) Header(key string) string {
 	return c.requestHeader(key)
 }
 
@@ -727,6 +680,9 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 		Helpers: helpers,
 	}
 
+	// set render contentType
+	c.SetContentType(r.ContentType())
+
 	// render
 	c.Render(code, r)
 }
@@ -734,18 +690,24 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	c.Render(code, render.JSON{Data: obj})
+	r := render.JSON{Data: obj}
+	c.SetContentType(r.ContentType())
+	c.Render(code, r)
 }
 
 // XML serializes the given struct as XML into the response body.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
-	c.Render(code, render.XML{Data: obj})
+	r := render.XML{Data: obj}
+	c.SetContentType(r.ContentType())
+	c.Render(code, r)
 }
 
 // String writes the given string into the response body.
 func (c *Context) String(code int, data string) {
-	c.Render(code, render.Text{Data: data})
+	r := render.Text{Data: data}
+	c.SetContentType(r.ContentType())
+	c.Render(code, r)
 }
 
 // Redirect returns a HTTP redirect to the specific location.
