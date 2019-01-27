@@ -319,12 +319,24 @@ func (a *App) handleHTTPRequest(c *Context) {
 	if a.HandleMethodNotAllowed {
 		if allow := a.router.allowed(path, httpMethod); len(allow) > 0 {
 			c.handlers = a.router.Handlers
+			if a.methodNotAllowedHandler != nil {
+				c.handlers = append(c.handlers, a.methodNotAllowedHandler)
+				c.Next()
+				return
+			}
 			c.ServeError(http.StatusMethodNotAllowed, errors.New(default405Body))
 			return
 		}
 	}
 
 	c.handlers = a.router.Handlers
+
+	if a.notFoundHandler != nil {
+		c.handlers = append(c.handlers, a.notFoundHandler)
+		c.Next()
+		return
+	}
+
 	c.ServeError(http.StatusNotFound, errors.New(default404Body))
 }
 

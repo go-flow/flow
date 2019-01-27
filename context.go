@@ -813,9 +813,9 @@ func (c *Context) ServeError(code int, err error) {
 		c.app.methodNotAllowedHandler(c)
 	} else if c.app.notFoundHandler != nil && code == http.StatusNotFound {
 		c.app.notFoundHandler(c)
-	} else if c.Response.Status() == code {
-
-		c.Response.Header()["Content-Type"] = []string{"text/plain"}
+	} else {
+		c.Status(code)
+		c.SetContentType([]string{"text/plain"})
 		c.Response.Write([]byte(err.Error()))
 		return
 	}
