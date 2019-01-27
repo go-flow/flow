@@ -798,10 +798,14 @@ func (c *Context) Value(key interface{}) interface{} {
 // ServeError serves error message with given code and message
 // the error is served with text/plain mime type
 func (c *Context) ServeError(code int, err error) {
-	// abord context execution
-	c.Abort()
 	// store error in context error stack
 	c.Error(err)
+
+	// set response status
+	c.Status(code)
+
+	// execute all handlers in context
+	c.Next()
 
 	if c.Response.Written() {
 		return
@@ -814,7 +818,6 @@ func (c *Context) ServeError(code int, err error) {
 	} else if c.app.notFoundHandler != nil && code == http.StatusNotFound {
 		c.app.notFoundHandler(c)
 	} else {
-		c.Status(code)
 		c.SetContentType([]string{"text/plain"})
 		c.Response.Write([]byte(err.Error()))
 		return
