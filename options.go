@@ -17,7 +17,7 @@ const (
 
 	defaultRedirectTrailingSlash  = true
 	defaultRedirectFixedPath      = false
-	defaultHandleMethodNotAllowed = true
+	defaultHandleMethodNotAllowed = false
 	defaultMaxMultipartMemory     = 32 << 20 // 32 MB
 
 	default404Body = "404 page not found"
