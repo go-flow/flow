@@ -1,6 +1,8 @@
 package binding
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // Content-Type MIME for common data formats.
 const (
@@ -54,7 +56,11 @@ func Default(method, contentType string) Binder {
 		return JSON
 	case MIMEXML, MIMEXML2:
 		return XML
-	default: //case MIMEPOSTForm, MIMEMultipartPOSTForm:
+	case MIMEPOSTForm:
+		return FormPost
+	case MIMEMultipartPOSTForm:
+		return FormMultipart
+	default:
 		return Form
 	}
 }

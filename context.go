@@ -3,6 +3,7 @@ package flow
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -444,66 +445,26 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dest string) erro
 // Bind checks the Content-Type to select a binding engine automatically,
 func (c *Context) Bind(obj interface{}) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
-	return c.MustBindWith(obj, b)
+	return c.BindWith(obj, b)
 }
 
-// BindJSON is a shortcut for c.MustBindWith(obj, binding.JSON).
+// BindJSON binds the passed struct pointer using JSON binding engine.
 func (c *Context) BindJSON(obj interface{}) error {
-	return c.MustBindWith(obj, binding.JSON)
+	return c.BindWith(obj, binding.JSON)
 }
 
-// BindXML is a shortcut for c.MustBindWith(obj, binding.BindXML).
+// BindXML binds the passed struct pointer using XML binding engine.
 func (c *Context) BindXML(obj interface{}) error {
-	return c.MustBindWith(obj, binding.XML)
+	return c.BindWith(obj, binding.XML)
 }
 
-// BindQuery is a shortcut for c.MustBindWith(obj, binding.Query).
+// BindQuery binds the passed struct pointer using Query binding engine.
 func (c *Context) BindQuery(obj interface{}) error {
-	return c.MustBindWith(obj, binding.Query)
+	return c.BindWith(obj, binding.Query)
 }
 
-// BindURI binds the passed struct pointer using binding.Uri.
+// BindURI binds the passed struct pointer using URI binding engine.
 func (c *Context) BindURI(obj interface{}) error {
-	if err := c.ShouldBindURI(obj); err != nil {
-		c.ServeError(http.StatusBadRequest, err)
-		return err
-	}
-	return nil
-}
-
-// MustBindWith binds the passed struct pointer using the specified binding engine.
-func (c *Context) MustBindWith(obj interface{}, b binding.Binder) error {
-	if err := c.ShouldBindWith(obj, b); err != nil {
-		c.ServeError(http.StatusBadRequest, err)
-		return err
-	}
-	return nil
-}
-
-// ShouldBind checks the Content-Type to select a binding engine automatically,
-// Depending the "Content-Type" header different bindings are used.
-func (c *Context) ShouldBind(obj interface{}) error {
-	b := binding.Default(c.Request.Method, c.ContentType())
-	return c.ShouldBindWith(obj, b)
-}
-
-// ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
-func (c *Context) ShouldBindJSON(obj interface{}) error {
-	return c.ShouldBindWith(obj, binding.JSON)
-}
-
-// ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
-func (c *Context) ShouldBindXML(obj interface{}) error {
-	return c.ShouldBindWith(obj, binding.XML)
-}
-
-// ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
-func (c *Context) ShouldBindQuery(obj interface{}) error {
-	return c.ShouldBindWith(obj, binding.Query)
-}
-
-// ShouldBindURI binds the passed struct pointer using the specified binding engine.
-func (c *Context) ShouldBindURI(obj interface{}) error {
 	m := make(map[string][]string)
 	for _, v := range c.Params {
 		m[v.Key] = []string{v.Value}
@@ -511,9 +472,9 @@ func (c *Context) ShouldBindURI(obj interface{}) error {
 	return binding.URI.BindURI(m, obj)
 }
 
-// ShouldBindWith binds the passed struct pointer using the specified binding engine.
+// BindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
-func (c *Context) ShouldBindWith(obj interface{}, b binding.Binder) error {
+func (c *Context) BindWith(obj interface{}, b binding.Binder) error {
 	return b.Bind(c.Request, obj)
 }
 
@@ -712,6 +673,9 @@ func (c *Context) String(code int, data string) {
 
 // Redirect returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
+	if (code < 300 || code > 308) && code != 201 {
+		panic(fmt.Errorf("Cannot redirect with status code %d", code))
+	}
 	http.Redirect(c.Response, c.Request, location, code)
 }
 
