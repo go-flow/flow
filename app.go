@@ -206,7 +206,8 @@ func (a *App) RegisterController(ctrl interface{}) {
 		i.Init(a)
 	}
 
-	fmt.Printf("Registering `%s` with Prefix: `%s`\n", fullCtrlName, prefix)
+	// log registration for debugging purposes
+	a.Logger.Debug(fmt.Sprintf("Registering `%s` with Prefix: `%s`\n", fullCtrlName, prefix))
 
 	ctrlRouter, ok := ctrl.(ControllerRouter)
 	if !ok {
