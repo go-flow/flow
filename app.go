@@ -16,7 +16,18 @@ import (
 	"github.com/go-flow/flow/di"
 )
 
-// App -
+const (
+	// ControllerPackage holds package name in which controllers can be registered
+	ControllerPackage = "controllers"
+
+	// ControllerIndex holds controller Index name
+	ControllerIndex = "Index"
+
+	// ControllerSuffix holds controller naming convention
+	ControllerSuffix = "Controller"
+)
+
+// App holds fully working application setup
 type App struct {
 	Options
 
@@ -145,23 +156,69 @@ func (a *App) InjectDeps(dest interface{}, ctx ...reflect.Value) {
 }
 
 // RegisterController registers application controller
-func (a *App) RegisterController(ctrl Controller) {
-	// check if controller imlements initer
-	if i, ok := ctrl.(ControllerIniter); ok {
-		i.Init(a)
+func (a *App) RegisterController(ctrl interface{}) {
+
+	// set controller route prefix to default
+	prefix := "/"
+
+	// check naming convention
+	typ := reflect.TypeOf(ctrl)
+
+	// get full controller full name
+	fullCtrlName := typ.String()
+
+	// check if controller is pointer
+	if typ.Kind() != reflect.Ptr {
+		panic(fmt.Sprintf("Controller `%s` has to be pointer", fullCtrlName))
+	}
+	// remove * from full name
+	fullCtrlName = fullCtrlName[1:]
+
+	// check if passed controller is in proper package
+	if !strings.HasPrefix(fullCtrlName, ControllerPackage) {
+		panic(fmt.Sprintf("Controller `%s` has to be in `%s` package", fullCtrlName, ControllerPackage))
 	}
 
-	// set prefix to default
-	prefix := "/"
+	//check if pased controller follows naming conventions
+	if !strings.HasSuffix(fullCtrlName, ControllerSuffix) {
+		panic(fmt.Sprintf("Controller `%s` does not follow naming convention", fullCtrlName))
+	}
+
+	// extract controller name from struct
+
+	ctrlName := strings.Replace(fullCtrlName, ".", "", -1)
+	ctrlName = strings.TrimPrefix(ctrlName, ControllerPackage)
+	ctrlName = strings.TrimSuffix(ctrlName, ControllerSuffix)
+
+	// assign controller Name to prefix if it is not Index controller
+	if ctrlName != ControllerIndex {
+		prefix = fmt.Sprintf("/%s", ctrlName)
+		prefix = strings.ToLower(prefix)
+	}
+
 	// check if controller implements prefixer
 	if p, ok := ctrl.(ControllerPrefixer); ok {
 		prefix = p.Prefix()
 	}
 
+	// check if controller imlements initer
+	if i, ok := ctrl.(ControllerIniter); ok {
+		i.Init(a)
+	}
+
+	fmt.Printf("Registering `%s` with Prefix: `%s`\n", fullCtrlName, prefix)
+
+	ctrlRouter, ok := ctrl.(ControllerRouter)
+	if !ok {
+		panic(fmt.Sprintf("controller `%s` does not implement ControllerRouter interface", fullCtrlName))
+	}
+
+	routes := ctrlRouter.Routes()
+
 	//check if we have any dependencies registered
 	if a.container.Len() == 0 {
 		// we dont have any dependencies defined
-		a.router.Attach(prefix, ctrl.Routes())
+		a.router.Attach(prefix, routes)
 		return
 	}
 
@@ -171,7 +228,7 @@ func (a *App) RegisterController(ctrl Controller) {
 	// inject dependencies to controller
 	injector.Inject(ctrl)
 
-	a.router.Attach(prefix, ctrl.Routes())
+	a.router.Attach(prefix, routes)
 }
 
 // MethodNotAllowedHandler is Handler where message and error can be personalized

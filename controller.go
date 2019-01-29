@@ -1,9 +1,9 @@
 package flow
 
-// Controller defines set of actions needed in application controller
+// ControllerRouter allows controller to define custom controller routing
 //
 // Controller is used on app#RegisterController
-type Controller interface {
+type ControllerRouter interface {
 
 	// Routes returns controller action routing
 	Routes() *Router
