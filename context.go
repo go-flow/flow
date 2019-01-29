@@ -762,9 +762,10 @@ func (c *Context) Value(key interface{}) interface{} {
 // ServeError serves error message with given code and message
 // the error is served with text/plain mime type
 func (c *Context) ServeError(code int, err error) {
+	
 	// store error in context error stack
 	c.Error(err)
-
+	
 	// set response status
 	c.Status(code)
 
