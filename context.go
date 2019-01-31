@@ -776,14 +776,14 @@ func (c *Context) ServeError(code int, err error) {
 		return
 	}
 
-	if c.app.errorHandler != nil && code == http.StatusInternalServerError {
-		c.app.errorHandler(c)
-	} else if c.app.methodNotAllowedHandler != nil && code == http.StatusMethodNotAllowed {
+	if c.app.methodNotAllowedHandler != nil && code == http.StatusMethodNotAllowed {
 		c.app.methodNotAllowedHandler(c)
 	} else if c.app.notFoundHandler != nil && code == http.StatusNotFound {
 		c.app.notFoundHandler(c)
 	} else if c.app.unauthorizedHandler != nil && code == http.StatusUnauthorized {
 		c.app.unauthorizedHandler(c)
+	} else if c.app.errorHandler != nil{
+		c.app.errorHandler(c)
 	} else {
 		c.SetContentType([]string{"text/plain"})
 		c.Response.Write([]byte(err.Error()))
