@@ -35,6 +35,7 @@ type App struct {
 	pool   sync.Pool
 
 	methodNotAllowedHandler HandlerFunc
+	unauthorizedHandler     HandlerFunc
 	notFoundHandler         HandlerFunc
 	errorHandler            HandlerFunc
 
@@ -242,6 +243,11 @@ func (a *App) MethodNotAllowedHandler(handler HandlerFunc) {
 // to be in line with application design and logic
 func (a *App) NotFoundHandler(handler HandlerFunc) {
 	a.notFoundHandler = handler
+}
+
+// UnauthorizedHandler is handler which is triggered ServeError with 401 status code is called
+func (a *App) UnauthorizedHandler(handler HandlerFunc) {
+	a.unauthorizedHandler = handler
 }
 
 // ErrorHandler is Handler where message and error can be personalized
