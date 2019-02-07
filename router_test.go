@@ -99,7 +99,10 @@ func TestRouterGroupBadMethod(t *testing.T) {
 
 func TestRouterMiddlewareGeneralCase(t *testing.T) {
 	signature := ""
-	router := New()
+	opts := NewOptions()
+	opts.UseTranslator = false
+	opts.UseViewEngine = false
+	router := NewWithOptions(opts)
 	router.Use(func(c *Context) {
 		signature += "A"
 		c.Next()
@@ -121,7 +124,11 @@ func TestRouterMiddlewareGeneralCase(t *testing.T) {
 
 func TestRouterMiddlewareAbort(t *testing.T) {
 	signature := ""
-	router := New()
+	opts := NewOptions()
+	opts.UseTranslator = false
+	opts.UseViewEngine = false
+	router := NewWithOptions(opts)
+
 	router.Use(func(c *Context) {
 		signature += "A"
 	})
@@ -148,7 +155,12 @@ func TestRouterMiddlewareAbort(t *testing.T) {
 
 func TestRouterMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 	signature := ""
-	router := New()
+
+	opts := NewOptions()
+	opts.UseTranslator = false
+	opts.UseViewEngine = false
+	router := NewWithOptions(opts)
+
 	router.Use(func(c *Context) {
 		signature += "A"
 		c.Next()
@@ -172,15 +184,21 @@ func TestRouterMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 func TestRouterMiddlewareFailHandlersChain(t *testing.T) {
 	// SETUP
 	signature := ""
-	router := New()
+
+	opts := NewOptions()
+	opts.UseTranslator = false
+	opts.UseViewEngine = false
+	opts.SessionSecret = "testing"
+	opts.UseRequestLogger = false
+	router := NewWithOptions(opts)
+
 	router.Use(func(context *Context) {
 		signature += "A"
-
+		context.Abort()
 		context.ServeError(http.StatusInternalServerError, errors.New("foo"))
 	})
 	router.Use(func(context *Context) {
 		signature += "B"
-		context.Next()
 		signature += "C"
 	})
 	// RUN
@@ -199,7 +217,14 @@ func performRequest(r http.Handler, method, path string) *httptest.ResponseRecor
 }
 
 func performRequestInGroup(t *testing.T, method string) {
-	app := New()
+	opts := NewOptions()
+	opts.UseViewEngine = false
+	opts.UseTranslator = false
+	opts.SessionSecret = "testing"
+	opts.UsePanicRecovery = false
+	opts.UseRequestLogger = false
+
+	app := NewWithOptions(opts)
 	router := app.Router()
 	v1 := router.Group("v1", func(c *Context) {})
 	assert.Equal(t, "/v1", v1.BasePath())

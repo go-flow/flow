@@ -184,14 +184,14 @@ func lookupFields(elemTyp reflect.Type, skipUnexported bool, parentIndex []int) 
 			index = append(parentIndex, i)
 		}
 
-		field := field{
+		fld := field{
 			Type:   f.Type,
 			Name:   f.Name,
 			Index:  index,
 			CanSet: isExported,
 		}
 
-		fields = append(fields, field)
+		fields = append(fields, fld)
 	}
 
 	return

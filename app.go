@@ -180,7 +180,7 @@ func (a *App) RegisterController(ctrl interface{}) {
 		panic(fmt.Sprintf("Controller `%s` has to be in `%s` package", fullCtrlName, ControllerPackage))
 	}
 
-	//check if pased controller follows naming conventions
+	//check if passed controller follows naming conventions
 	if !strings.HasSuffix(fullCtrlName, ControllerSuffix) {
 		panic(fmt.Sprintf("Controller `%s` does not follow naming convention", fullCtrlName))
 	}
@@ -266,10 +266,10 @@ func (a *App) Serve() error {
 		Handler: a,
 	}
 
-	// make interupt channel
+	// make interrupt channel
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGTERM, os.Interrupt)
-	// listen for interupt signal
+	// listen for interrupt signal
 	go func() {
 		<-c
 		a.Logger.Info("Shutting down application")
@@ -327,7 +327,7 @@ func (a *App) stop() error {
 	return nil
 }
 
-// Stop issues interupt signal
+// Stop issues interrupt signal
 func (a *App) Stop() error {
 	// get current process
 	proc, err := os.FindProcess(os.Getpid())
@@ -335,7 +335,7 @@ func (a *App) Stop() error {
 		return err
 	}
 	a.Logger.Debug("Stopping....")
-	// issue interupt signal
+	// issue interrupt signal
 	return proc.Signal(os.Interrupt)
 }
 
@@ -383,24 +383,12 @@ func (a *App) handleHTTPRequest(c *Context) {
 	if a.HandleMethodNotAllowed {
 		if allow := a.router.allowed(path, httpMethod); len(allow) > 0 {
 			c.handlers = a.router.Handlers
-			if a.methodNotAllowedHandler != nil {
-				c.handlers = append(c.handlers, a.methodNotAllowedHandler)
-				c.Next()
-				return
-			}
 			c.ServeError(http.StatusMethodNotAllowed, errors.New(default405Body))
 			return
 		}
 	}
 
 	c.handlers = a.router.Handlers
-
-	if a.notFoundHandler != nil {
-		c.handlers = append(c.handlers, a.notFoundHandler)
-		c.Next()
-		return
-	}
-
 	c.ServeError(http.StatusNotFound, errors.New(default404Body))
 }
 

@@ -69,7 +69,7 @@ func (e *HTMLEngine) RenderTemplate(out io.Writer, name string, data map[string]
 	// view helper function to include layout file
 	allFuncs["include"] = func(layout string) (template.HTML, error) {
 		buf := new(bytes.Buffer)
-		err := e.RenderTemplate(buf, layout, data, viewFuncs, false)
+		err = e.RenderTemplate(buf, layout, data, viewFuncs, false)
 		return template.HTML(buf.String()), err
 	}
 

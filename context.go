@@ -360,7 +360,11 @@ func (c *Context) PostFormArray(key string) []string {
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 	req := c.Request
-	req.ParseMultipartForm(c.app.MaxMultipartMemory)
+	err := req.ParseMultipartForm(c.app.MaxMultipartMemory)
+	
+	if err != nil{
+		panic(err)
+	}
 	if values := req.PostForm[key]; len(values) > 0 {
 		return values, true
 	}
@@ -382,7 +386,11 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	req := c.Request
-	req.ParseMultipartForm(c.app.MaxMultipartMemory)
+	err := req.ParseMultipartForm(c.app.MaxMultipartMemory)
+	if err != nil {
+		panic(err)
+	}
+
 	dicts, exist := c.get(req.PostForm, key)
 
 	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
@@ -581,7 +589,10 @@ func (c *Context) Render(code int, r render.Renderer) {
 	}
 
 	c.Status(code)
-	c.Response.Write(tpl.Bytes())
+	_, err := c.Response.Write(tpl.Bytes())
+	if err != nil {
+		c.ServeError(http.StatusInternalServerError, err)
+	}
 
 }
 
@@ -599,10 +610,16 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 	// request scoped data
 	data := make(map[string]interface{})
 
+	if c.app.SessionStore != nil {
+		s := c.Session()
+		// pass session
+		data["session"] = s.Values()
+		// save session
+		s.Save()
+	}
+
 	// pass all context keys to view
 	data["context"] = c.Keys
-	// pass session
-	data["session"] = c.Session().Values()
 	// pass all context Errors
 	data["errors"] = c.Errors.Errors()
 	// object from action is passed to View as model
@@ -674,7 +691,7 @@ func (c *Context) String(code int, data string) {
 // Redirect returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
 	if (code < 300 || code > 308) && code != 201 {
-		panic(fmt.Errorf("Cannot redirect with status code %d", code))
+		panic(fmt.Errorf("can not redirect with status code %d", code))
 	}
 	http.Redirect(c.Response, c.Request, location, code)
 }
@@ -786,7 +803,7 @@ func (c *Context) ServeError(code int, err error) {
 		c.app.errorHandler(c)
 	} else {
 		c.SetContentType([]string{"text/plain"})
-		c.Response.Write([]byte(err.Error()))
+		_ , _ = c.Response.Write([]byte(err.Error()))
 		return
 	}
 	c.Response.WriteHeaderNow()
