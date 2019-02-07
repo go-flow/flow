@@ -175,11 +175,11 @@ func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, XML, Default("POST", MIMEXML))
 	assert.Equal(t, XML, Default("PUT", MIMEXML2))
 
-	assert.Equal(t, Form, Default("POST", MIMEPOSTForm))
-	assert.Equal(t, Form, Default("PUT", MIMEPOSTForm))
+	assert.Equal(t, FormPost, Default("POST", MIMEPOSTForm))
+	assert.Equal(t, FormPost, Default("PUT", MIMEPOSTForm))
 
-	assert.Equal(t, Form, Default("POST", MIMEMultipartPOSTForm))
-	assert.Equal(t, Form, Default("PUT", MIMEMultipartPOSTForm))
+	assert.Equal(t, FormMultipart, Default("POST", MIMEMultipartPOSTForm))
+	assert.Equal(t, FormMultipart, Default("PUT", MIMEMultipartPOSTForm))
 
 }
 
@@ -577,27 +577,6 @@ func TestValidationDisabled(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestExistsSucceeds(t *testing.T) {
-	type HogeStruct struct {
-		Hoge *int `json:"hoge" binding:"exists"`
-	}
-
-	var obj HogeStruct
-	req := requestWithBody("POST", "/", `{"hoge": 0}`)
-	err := JSON.Bind(req, &obj)
-	assert.NoError(t, err)
-}
-
-func TestExistsFails(t *testing.T) {
-	type HogeStruct struct {
-		Hoge *int `json:"foo" binding:"exists"`
-	}
-
-	var obj HogeStruct
-	req := requestWithBody("POST", "/", `{"boen": 0}`)
-	err := JSON.Bind(req, &obj)
-	assert.Error(t, err)
-}
 
 func TestUriBinding(t *testing.T) {
 	b := URI
