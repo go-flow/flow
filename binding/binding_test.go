@@ -175,11 +175,11 @@ func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, XML, Default("POST", MIMEXML))
 	assert.Equal(t, XML, Default("PUT", MIMEXML2))
 
-	assert.Equal(t, FormPost, Default("POST", MIMEPOSTForm))
-	assert.Equal(t, FormPost, Default("PUT", MIMEPOSTForm))
+	assert.Equal(t, Form, Default("POST", MIMEPOSTForm))
+	assert.Equal(t, Form, Default("PUT", MIMEPOSTForm))
 
-	assert.Equal(t, FormMultipart, Default("POST", MIMEMultipartPOSTForm))
-	assert.Equal(t, FormMultipart, Default("PUT", MIMEMultipartPOSTForm))
+	assert.Equal(t, Form, Default("POST", MIMEMultipartPOSTForm))
+	assert.Equal(t, Form, Default("PUT", MIMEMultipartPOSTForm))
 
 }
 

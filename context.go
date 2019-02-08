@@ -64,6 +64,22 @@ func (c *Context) reset() {
 	c.logger = nil
 }
 
+// Copy returns a copy of the current context that can be safely used outside the request's scope.
+// This has to be used when the context has to be passed to a goroutine.
+func (c *Context) Copy() *Context {
+	var cp = *c
+	cp.writermem.ResponseWriter = nil
+	cp.Response = &cp.writermem
+	cp.index = abortIndex
+	cp.handlers = nil
+	return &cp
+}
+
+// Handler returns the main handler.
+func (c *Context) Handler() HandlerFunc {
+	return c.handlers.Last()
+}
+
 /************************************/
 /*********** FLOW CONTROL ***********/
 /************************************/
@@ -360,11 +376,8 @@ func (c *Context) PostFormArray(key string) []string {
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 	req := c.Request
-	err := req.ParseMultipartForm(c.app.MaxMultipartMemory)
-	
-	if err != nil{
-		panic(err)
-	}
+	_ = req.ParseMultipartForm(c.app.MaxMultipartMemory)
+
 	if values := req.PostForm[key]; len(values) > 0 {
 		return values, true
 	}
@@ -779,10 +792,10 @@ func (c *Context) Value(key interface{}) interface{} {
 // ServeError serves error message with given code and message
 // the error is served with text/plain mime type
 func (c *Context) ServeError(code int, err error) {
-	
+
 	// store error in context error stack
 	c.Error(err)
-	
+
 	// set response status
 	c.Status(code)
 
@@ -799,11 +812,11 @@ func (c *Context) ServeError(code int, err error) {
 		c.app.notFoundHandler(c)
 	} else if c.app.unauthorizedHandler != nil && code == http.StatusUnauthorized {
 		c.app.unauthorizedHandler(c)
-	} else if c.app.errorHandler != nil{
+	} else if c.app.errorHandler != nil {
 		c.app.errorHandler(c)
 	} else {
 		c.SetContentType([]string{"text/plain"})
-		_ , _ = c.Response.Write([]byte(err.Error()))
+		_, _ = c.Response.Write([]byte(err.Error()))
 		return
 	}
 	c.Response.WriteHeaderNow()

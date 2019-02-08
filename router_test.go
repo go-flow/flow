@@ -100,8 +100,12 @@ func TestRouterGroupBadMethod(t *testing.T) {
 func TestRouterMiddlewareGeneralCase(t *testing.T) {
 	signature := ""
 	opts := NewOptions()
-	opts.UseTranslator = false
+
 	opts.UseViewEngine = false
+	opts.UseRequestLogger = false
+	opts.UseSession = false
+	opts.UseTranslator = false
+
 	router := NewWithOptions(opts)
 	router.Use(func(c *Context) {
 		signature += "A"
@@ -125,8 +129,12 @@ func TestRouterMiddlewareGeneralCase(t *testing.T) {
 func TestRouterMiddlewareAbort(t *testing.T) {
 	signature := ""
 	opts := NewOptions()
-	opts.UseTranslator = false
+
 	opts.UseViewEngine = false
+	opts.UseRequestLogger = false
+	opts.UseSession = false
+	opts.UseTranslator = false
+
 	router := NewWithOptions(opts)
 
 	router.Use(func(c *Context) {
@@ -157,8 +165,12 @@ func TestRouterMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 	signature := ""
 
 	opts := NewOptions()
-	opts.UseTranslator = false
+
 	opts.UseViewEngine = false
+	opts.UseRequestLogger = false
+	opts.UseSession = false
+	opts.UseTranslator = false
+
 	router := NewWithOptions(opts)
 
 	router.Use(func(c *Context) {
@@ -186,10 +198,12 @@ func TestRouterMiddlewareFailHandlersChain(t *testing.T) {
 	signature := ""
 
 	opts := NewOptions()
-	opts.UseTranslator = false
+
 	opts.UseViewEngine = false
-	opts.SessionSecret = "testing"
 	opts.UseRequestLogger = false
+	opts.UseSession = false
+	opts.UseTranslator = false
+
 	router := NewWithOptions(opts)
 
 	router.Use(func(context *Context) {
@@ -218,11 +232,12 @@ func performRequest(r http.Handler, method, path string) *httptest.ResponseRecor
 
 func performRequestInGroup(t *testing.T, method string) {
 	opts := NewOptions()
-	opts.UseViewEngine = false
-	opts.UseTranslator = false
-	opts.SessionSecret = "testing"
+
 	opts.UsePanicRecovery = false
+	opts.UseViewEngine = false
 	opts.UseRequestLogger = false
+	opts.UseSession = false
+	opts.UseTranslator = false
 
 	app := NewWithOptions(opts)
 	router := app.Router()
@@ -264,6 +279,7 @@ func performRequestInGroup(t *testing.T, method string) {
 	}
 
 	w := performRequest(app, method, "/v1/login/test")
+
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "the method was "+method+" and index 3", w.Body.String())
 
