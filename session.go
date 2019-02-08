@@ -50,6 +50,22 @@ func (s *Session) Clear() {
 	}
 }
 
+// Flashes returns a slice of flash messages from the session.
+//
+// A single variadic argument is accepted, and it is optional: it defines
+// the flash key. If not defined "_flash" is used by default.
+func (s *Session) Flashes(vars ...string) []interface{} {
+	return s.Session.Flashes(vars...)
+}
+
+// AddFlash adds a flash message to the session.
+//
+// A single variadic argument is accepted, and it is optional: it defines
+// the flash key. If not defined "_flash" is used by default.
+func (s *Session) AddFlash(value interface{}, vars ...string) {
+	s.Session.AddFlash(value, vars...)
+}
+
 // Values returns all session values
 func (s *Session) Values() map[interface{}]interface{} {
 	return s.Session.Values
