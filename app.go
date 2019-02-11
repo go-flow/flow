@@ -185,14 +185,20 @@ func (a *App) RegisterController(ctrl interface{}) {
 		panic(fmt.Sprintf("Controller `%s` does not follow naming convention", fullCtrlName))
 	}
 
-	// extract controller name from struct
+	// get DI injector
+	injector := di.Struct(ctrl, a.container...)
 
+	// inject dependencies to controller
+	injector.Inject(ctrl)
+
+	// extract controller name from struct
 	ctrlName := strings.Replace(fullCtrlName, ".", "", -1)
 	ctrlName = strings.TrimPrefix(ctrlName, ControllerPackage)
 	ctrlName = strings.TrimSuffix(ctrlName, ControllerSuffix)
 
 	// assign controller Name to prefix if it is not Index controller
 	if ctrlName != ControllerIndex {
+		ctrlName = toSnakeCase(ctrlName)
 		prefix = fmt.Sprintf("/%s", ctrlName)
 		prefix = strings.ToLower(prefix)
 	}
@@ -223,12 +229,6 @@ func (a *App) RegisterController(ctrl interface{}) {
 		a.router.Attach(prefix, routes)
 		return
 	}
-
-	// get DI injector
-	injector := di.Struct(ctrl, a.container...)
-
-	// inject dependencies to controller
-	injector.Inject(ctrl)
 
 	a.router.Attach(prefix, routes)
 }

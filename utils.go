@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"path"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -106,4 +107,13 @@ func loadPartials(viewsRoot, partialsRoot, ext string) ([]string, error) {
 		}
 	}
 	return partials, nil
+}
+
+var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+
+func toSnakeCase(str string) string {
+	snake := matchFirstCap.ReplaceAllString(str, "${1}-${2}")
+	snake = matchAllCap.ReplaceAllString(snake, "${1}-${2}")
+	return strings.ToLower(snake)
 }
