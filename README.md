@@ -5,3 +5,5 @@
 [![GoReport](https://goreportcard.com/badge/github.com/go-flow/flow)](https://goreportcard.com/report/github.com/go-flow/flow)
 ![GitHub contributors](https://img.shields.io/github/contributors/go-flow/flow.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+## Readme is on its way :)
