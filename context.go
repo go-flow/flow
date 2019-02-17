@@ -99,6 +99,13 @@ func (c *Context) Abort() {
 	c.index = abortIndex
 }
 
+// AbortWithStatus calls `Abort()` and writes the headers with the specified status code.
+func (c *Context) AbortWithStatus(code int) {
+	c.Status(code)
+	c.Response.WriteHeaderNow()
+	c.Abort()
+}
+
 // IsAborted returns true if the current context was aborted.
 func (c *Context) IsAborted() bool {
 	return c.index >= abortIndex
