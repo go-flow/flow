@@ -11,7 +11,7 @@ import (
 const (
 	defaultEnv  = "development"
 	defaultName = "FlowApp"
-	defaultAddr = "0.0.0.0:3000"
+	defaultAddr = "0.0.0.0:5000"
 
 	defaultLogLevel = "debug"
 
@@ -23,24 +23,24 @@ const (
 	default404Body = "404 page not found"
 	default405Body = "405 method not allowed"
 
-	defaultUseSession  = true
+	defaultUseSession  = false
 	defaultSessionName = "_flow_app_session"
 
-	defaultUseTranslator         = true
+	defaultUseTranslator         = false
 	defaultTranslatorLocalesRoot = "locales"
 	defaultTranslatorDefaultLang = "en-US"
 
 	defaultUseRequestLogger = true
 	defaultUsePanicRecovery = true
 
-	defaultUseViewEngine     = true
+	defaultUseViewEngine     = false
 	defaultViewsRoot         = "views"
 	defaultViewsExt          = ".tpl"
 	defaultViewsMasterLayout = "layouts/master"
 	defaultViewsPartialsRoot = "partials"
 	defaultViewsDisableCache = false
 
-	defaultServeStatic = true
+	defaultServeStatic = false
 	defaultStaticPath  = "/static"
 	defaultStaticDir   = "./public"
 )
