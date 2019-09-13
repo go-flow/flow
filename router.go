@@ -105,52 +105,52 @@ func (r *Router) Handle(method, path string, handlers ...HandlerFunc) {
 }
 
 // GET is a shortcut for router.Handle("GET", path, handler)
-func (r *Router) GET(path string, handler HandlerFunc) {
-	r.Handle("GET", path, handler)
+func (r *Router) GET(path string, handler ...HandlerFunc) {
+	r.Handle("GET", path, handler...)
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handler)
-func (r *Router) HEAD(path string, handler HandlerFunc) {
-	r.Handle("HEAD", path, handler)
+func (r *Router) HEAD(path string, handler ...HandlerFunc) {
+	r.Handle("HEAD", path, handler...)
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handler)
-func (r *Router) OPTIONS(path string, handler HandlerFunc) {
-	r.Handle("OPTIONS", path, handler)
+func (r *Router) OPTIONS(path string, handler ...HandlerFunc) {
+	r.Handle("OPTIONS", path, handler...)
 }
 
 // POST is a shortcut for router.Handle("POST", path, handler)
-func (r *Router) POST(path string, handler HandlerFunc) {
-	r.Handle("POST", path, handler)
+func (r *Router) POST(path string, handler ...HandlerFunc) {
+	r.Handle("POST", path, handler...)
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handler)
-func (r *Router) PUT(path string, handler HandlerFunc) {
-	r.Handle("PUT", path, handler)
+func (r *Router) PUT(path string, handler ...HandlerFunc) {
+	r.Handle("PUT", path, handler...)
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handler)
-func (r *Router) PATCH(path string, handler HandlerFunc) {
-	r.Handle("PATCH", path, handler)
+func (r *Router) PATCH(path string, handler ...HandlerFunc) {
+	r.Handle("PATCH", path, handler...)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
-func (r *Router) DELETE(path string, handler HandlerFunc) {
-	r.Handle("DELETE", path, handler)
+func (r *Router) DELETE(path string, handler ...HandlerFunc) {
+	r.Handle("DELETE", path, handler...)
 }
 
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
-func (r *Router) Any(relativePath string, handler HandlerFunc) {
-	r.Handle("GET", relativePath, handler)
-	r.Handle("POST", relativePath, handler)
-	r.Handle("PUT", relativePath, handler)
-	r.Handle("PATCH", relativePath, handler)
-	r.Handle("HEAD", relativePath, handler)
-	r.Handle("OPTIONS", relativePath, handler)
-	r.Handle("DELETE", relativePath, handler)
-	r.Handle("CONNECT", relativePath, handler)
-	r.Handle("TRACE", relativePath, handler)
+func (r *Router) Any(relativePath string, handler ...HandlerFunc) {
+	r.Handle("GET", relativePath, handler...)
+	r.Handle("POST", relativePath, handler...)
+	r.Handle("PUT", relativePath, handler...)
+	r.Handle("PATCH", relativePath, handler...)
+	r.Handle("HEAD", relativePath, handler...)
+	r.Handle("OPTIONS", relativePath, handler...)
+	r.Handle("DELETE", relativePath, handler...)
+	r.Handle("CONNECT", relativePath, handler...)
+	r.Handle("TRACE", relativePath, handler...)
 }
 
 // Attach another router to current one

@@ -88,23 +88,23 @@ func (a *App) Use(middleware ...HandlerFunc) {
 }
 
 // GET is a shortcut for router.Handle("GET", path, handle)
-func (a *App) GET(path string, handler HandlerFunc) {
-	a.router.GET(path, handler)
+func (a *App) GET(path string, handler ...HandlerFunc) {
+	a.router.GET(path, handler...)
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handle)
-func (a *App) HEAD(path string, handler HandlerFunc) {
-	a.router.HEAD(path, handler)
+func (a *App) HEAD(path string, handler ...HandlerFunc) {
+	a.router.HEAD(path, handler...)
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
-func (a *App) OPTIONS(path string, handler HandlerFunc) {
-	a.router.OPTIONS(path, handler)
+func (a *App) OPTIONS(path string, handler ...HandlerFunc) {
+	a.router.OPTIONS(path, handler...)
 }
 
 // POST is a shortcut for router.Handle("POST", path, handle)
-func (a *App) POST(path string, handler HandlerFunc) {
-	a.router.POST(path, handler)
+func (a *App) POST(path string, handler ...HandlerFunc) {
+	a.router.POST(path, handler...)
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handle)
@@ -113,19 +113,19 @@ func (a *App) PUT(path string, handler HandlerFunc) {
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handle)
-func (a *App) PATCH(path string, handler HandlerFunc) {
-	a.router.PATCH(path, handler)
+func (a *App) PATCH(path string, handler ...HandlerFunc) {
+	a.router.PATCH(path, handler...)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
-func (a *App) DELETE(path string, handler HandlerFunc) {
-	a.router.DELETE(path, handler)
+func (a *App) DELETE(path string, handler ...HandlerFunc) {
+	a.router.DELETE(path, handler...)
 }
 
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
-func (a *App) Any(relativePath string, handler HandlerFunc) {
-	a.router.Any(relativePath, handler)
+func (a *App) Any(relativePath string, handler ...HandlerFunc) {
+	a.router.Any(relativePath, handler...)
 }
 
 // Attach another router to current one
