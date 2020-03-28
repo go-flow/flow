@@ -128,7 +128,11 @@ func NewOptions() Options {
 func optionsWithDefault(opts Options) Options {
 	//configure logger
 	if opts.Logger == nil {
-		opts.Logger = log.New(opts.LogLevel, opts.Env)
+		opts.Logger = log.New(log.Configuration{
+			EnableConsole:     true,
+			ConsoleJSONFormat: true,
+			ConsoleLevel:      opts.LogLevel,
+		})
 	}
 
 	//configure session store

@@ -1,7 +1,3 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
-// Use of this source code is governed by a MIT style
-// license that can be found in the LICENSE file.
-
 package binding
 
 import (
@@ -9,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -189,4 +186,39 @@ func TestValidatePrimitives(t *testing.T) {
 	assert.NoError(t, validate(str))
 	assert.NoError(t, validate(&str))
 	assert.Equal(t, "value", str)
+}
+
+// structCustomValidation is a helper struct we use to check that
+// custom validation can be registered on it.
+// The `notone` binding directive is for custom validation and registered later.
+type structCustomValidation struct {
+	Integer int `binding:"notone"`
+}
+
+func notOne(f1 validator.FieldLevel) bool {
+	if val, ok := f1.Field().Interface().(int); ok {
+		return val != 1
+	}
+	return false
+}
+
+func TestValidatorEngine(t *testing.T) {
+	// This validates that the function `notOne` matches
+	// the expected function signature by `defaultValidator`
+	// and by extension the validator library.
+	engine, ok := Validator.Engine().(*validator.Validate)
+	assert.True(t, ok)
+
+	err := engine.RegisterValidation("notone", notOne)
+	// Check that we can register custom validation without error
+	assert.Nil(t, err)
+
+	// Create an instance which will fail validation
+	withOne := structCustomValidation{Integer: 1}
+	errs := validate(withOne)
+
+	// Check that we got back non-nil errs
+	assert.NotNil(t, errs)
+	// Check that the error matches expectation
+	assert.Error(t, errs, "", "", "notone")
 }

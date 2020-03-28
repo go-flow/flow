@@ -1,9 +1,8 @@
 package render
 
 import (
+	"encoding/json"
 	"io"
-
-	"github.com/go-flow/flow/internal/json"
 )
 
 var jsonContentType = []string{"application/json; charset=utf-8"}

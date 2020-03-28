@@ -2,9 +2,8 @@ package flow
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-
-	"github.com/go-flow/flow/internal/json"
 )
 
 // Error represents a error's specification.
