@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/go-flow/flow/binding"
 	"github.com/go-flow/flow/i18n"
 	"github.com/go-flow/flow/log"
@@ -127,8 +125,8 @@ func (c *Context) Logger() log.Logger {
 //
 // This allows you to easily add things
 // like metrics (think DB times) to your request.
-func (c *Context) LogFields(fields ...zap.Field) {
-	c.logger = c.Logger().With(fields...)
+func (c *Context) LogFields(fields log.Fields) {
+	c.logger = c.Logger().WithFields(fields)
 }
 
 // AppOptions returns copy of application Options object
