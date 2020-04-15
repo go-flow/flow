@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	defaultEnv  = "development"
-	defaultName = "FlowApp"
-	defaultAddr = "0.0.0.0:5000"
+	defaultEnv     = "development"
+	defaultName    = "FlowApp"
+	defaultAddr    = "0.0.0.0:5000"
+	defaultVersion = "v0.0.0"
 
 	defaultLogLevel = "debug"
 
@@ -47,9 +48,10 @@ const (
 
 // Options holds flow configuration options
 type Options struct {
-	Env  string
-	Name string
-	Addr string
+	Env     string
+	Name    string
+	Addr    string
+	Version string
 
 	LogLevel string
 
@@ -96,6 +98,7 @@ func NewOptions() Options {
 	opts := Options{
 		Env:                    defaultEnv,
 		Name:                   defaultName,
+		Version:                defaultVersion,
 		Addr:                   defaultAddr,
 		LogLevel:               defaultLogLevel,
 		RedirectTrailingSlash:  defaultRedirectTrailingSlash,
