@@ -40,13 +40,14 @@ func RequestLogger() HandlerFunc {
 		c.Next()
 
 		c.LogFields(log.Fields{
-			"status":     c.Response.Status(),
-			"method":     c.Request.Method,
-			"path":       c.Request.URL.String(),
-			"client_ip":  c.ClientIP(),
-			"duration":   time.Since(start).String(),
-			"size":       c.Response.Size(),
-			"human_size": byteCountDecimal(int64(c.Response.Size())),
+			"app-version": c.app.Version,
+			"status":      c.Response.Status(),
+			"method":      c.Request.Method,
+			"path":        c.Request.URL.String(),
+			"client_ip":   c.ClientIP(),
+			"duration":    time.Since(start).String(),
+			"size":        c.Response.Size(),
+			"human_size":  byteCountDecimal(int64(c.Response.Size())),
 		})
 		c.Logger().Info("request-logger")
 	}
