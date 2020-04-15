@@ -90,6 +90,8 @@ type Options struct {
 	ViewEngine   view.Engine
 	Translator   *Translator
 
+	RequestLoggerIgnore []string
+
 	AppConfig interface{}
 }
 

@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"strings"
 	"time"
 
 	"github.com/go-flow/flow/log"
@@ -16,6 +17,11 @@ import (
 // code of the response.
 func RequestLogger() HandlerFunc {
 	return func(c *Context) {
+		// check if we should ignore given request
+		ignoreList := strings.Join(c.app.RequestLoggerIgnore, ",")
+		if strings.Contains(ignoreList, c.Request.URL.Path) {
+			return
+		}
 		start := time.Now()
 
 		// check if request ID exists in headers
