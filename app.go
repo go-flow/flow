@@ -16,17 +16,6 @@ import (
 	"github.com/go-flow/flow/di"
 )
 
-const (
-	// ControllerPackage holds package name in which controllers can be registered
-	ControllerPackage = "controllers"
-
-	// ControllerIndex holds controller Index name
-	ControllerIndex = "Index"
-
-	// ControllerSuffix holds controller naming convention
-	ControllerSuffix = "Controller"
-)
-
 // App holds fully working application setup
 type App struct {
 	Options
@@ -176,12 +165,12 @@ func (a *App) RegisterController(ctrl interface{}) {
 	fullCtrlName = fullCtrlName[1:]
 
 	// check if passed controller is in proper package
-	if !strings.HasPrefix(fullCtrlName, ControllerPackage) {
-		panic(fmt.Sprintf("Controller `%s` has to be in `%s` package", fullCtrlName, ControllerPackage))
+	if !strings.HasPrefix(fullCtrlName, a.ControllerPackage) {
+		panic(fmt.Sprintf("Controller `%s` has to be in `%s` package", fullCtrlName, a.ControllerPackage))
 	}
 
 	//check if passed controller follows naming conventions
-	if !strings.HasSuffix(fullCtrlName, ControllerSuffix) {
+	if !strings.HasSuffix(fullCtrlName, a.ControllerSuffix) {
 		panic(fmt.Sprintf("Controller `%s` does not follow naming convention", fullCtrlName))
 	}
 
@@ -193,19 +182,28 @@ func (a *App) RegisterController(ctrl interface{}) {
 
 	// extract controller name from struct
 	ctrlName := strings.Replace(fullCtrlName, ".", "", -1)
-	ctrlName = strings.TrimPrefix(ctrlName, ControllerPackage)
-	ctrlName = strings.TrimSuffix(ctrlName, ControllerSuffix)
+	ctrlName = strings.TrimPrefix(ctrlName, a.ControllerPackage)
+	ctrlName = strings.TrimSuffix(ctrlName, a.ControllerSuffix)
 
 	// assign controller Name to prefix if it is not Index controller
-	if ctrlName != ControllerIndex {
+	if ctrlName != a.ControllerIndex {
 		ctrlName = toSnakeCase(ctrlName)
 		prefix = fmt.Sprintf("/%s", ctrlName)
 		prefix = strings.ToLower(prefix)
+		if v, ok := ctrl.(ControllerVersioner); ok {
+			vPattern := fmt.Sprintf("%s-", strings.ToLower(v.Version()))
+			prefix = strings.Replace(prefix, vPattern, "", 1)
+		}
 	}
 
 	// check if controller implements prefixer
 	if p, ok := ctrl.(ControllerPrefixer); ok {
 		prefix = p.Prefix()
+	}
+
+	// check if controller implements versioner
+	if v, ok := ctrl.(ControllerVersioner); ok {
+		prefix = fmt.Sprintf("/%s%s", strings.ToLower(v.Version()), prefix)
 	}
 
 	// check if controller imlements initer
@@ -214,7 +212,7 @@ func (a *App) RegisterController(ctrl interface{}) {
 	}
 
 	// log registration for debugging purposes
-	a.Logger.Debug(fmt.Sprintf("Registering `%s` with Prefix: `%s`\n", fullCtrlName, prefix))
+	a.Logger.Debug(fmt.Sprintf("Registering `%s` with Prefix: `%s`", fullCtrlName, prefix))
 
 	ctrlRouter, ok := ctrl.(ControllerRouter)
 	if !ok {
