@@ -20,3 +20,8 @@ type ControllerPrefixer interface {
 type ControllerIniter interface {
 	Init(app *App)
 }
+
+// ControllerVersioner allows controllers versioning
+type ControllerVersioner interface {
+	Version() string
+}

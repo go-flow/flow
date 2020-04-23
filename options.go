@@ -44,6 +44,13 @@ const (
 	defaultServeStatic = false
 	defaultStaticPath  = "/static"
 	defaultStaticDir   = "./public"
+
+	// ControllerPackage holds package name in which controllers can be registered
+	defaultControllerPackage = "controllers"
+	// ControllerIndex holds controller Index name
+	defaultControllerIndex = "Index"
+	// ControllerSuffix holds controller naming convention
+	defaultControllerSuffix = "Controller"
 )
 
 // Options holds flow configuration options
@@ -90,6 +97,13 @@ type Options struct {
 	ViewEngine   view.Engine
 	Translator   *Translator
 
+	// ControllerPackage holds package name in which controllers can be registered
+	ControllerPackage string
+	// ControllerIndex holds controller Index name
+	ControllerIndex string
+	// ControllerSuffix holds controller naming convention
+	ControllerSuffix string
+
 	RequestLoggerIgnore []string
 
 	AppConfig interface{}
@@ -125,6 +139,9 @@ func NewOptions() Options {
 		ServeStatic:            defaultServeStatic,
 		StaticPath:             defaultStaticPath,
 		StaticDir:              defaultStaticDir,
+		ControllerPackage:      defaultControllerPackage,
+		ControllerIndex:        defaultControllerIndex,
+		ControllerSuffix:       defaultControllerSuffix,
 	}
 
 	return opts
