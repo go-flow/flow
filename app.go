@@ -9,11 +9,16 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
 
 	"github.com/go-flow/flow/di"
+)
+
+var (
+	ctrlVerRegex = regexp.MustCompile(`V[0-9]`)
 )
 
 // App holds fully working application setup
@@ -150,6 +155,8 @@ func (a *App) RegisterController(ctrl interface{}) {
 
 	// set controller route prefix to default
 	prefix := "/"
+	// set controller version to default
+	version := ""
 
 	// check naming convention
 	typ := reflect.TypeOf(ctrl)
@@ -185,15 +192,23 @@ func (a *App) RegisterController(ctrl interface{}) {
 	ctrlName = strings.TrimPrefix(ctrlName, a.ControllerPackage)
 	ctrlName = strings.TrimSuffix(ctrlName, a.ControllerSuffix)
 
+	// extract controller version from name
+	version = ctrlVerRegex.FindString(ctrlName)
+	if version != "" {
+		ctrlName = strings.TrimPrefix(ctrlName, version)
+		version = "/" + strings.ToLower(version)
+	}
+
 	// assign controller Name to prefix if it is not Index controller
 	if ctrlName != a.ControllerIndex {
-		ctrlName = toSnakeCase(ctrlName)
+		prefix = toSnakeCase(ctrlName)
 		prefix = fmt.Sprintf("/%s", ctrlName)
 		prefix = strings.ToLower(prefix)
-		if v, ok := ctrl.(ControllerVersioner); ok {
-			vPattern := fmt.Sprintf("%s-", strings.ToLower(v.Version()))
-			prefix = strings.Replace(prefix, vPattern, "", 1)
-		}
+	}
+
+	// check if controller implements versioner
+	if v, ok := ctrl.(ControllerVersioner); ok {
+		version = v.Version()
 	}
 
 	// check if controller implements prefixer
@@ -201,18 +216,19 @@ func (a *App) RegisterController(ctrl interface{}) {
 		prefix = p.Prefix()
 	}
 
-	// check if controller implements versioner
-	if v, ok := ctrl.(ControllerVersioner); ok {
-		prefix = fmt.Sprintf("/%s%s", strings.ToLower(v.Version()), prefix)
-	}
-
 	// check if controller imlements initer
 	if i, ok := ctrl.(ControllerIniter); ok {
 		i.Init(a)
 	}
 
+	path := fmt.Sprintf("%s%s", version, prefix)
+
+	if !strings.HasPrefix(path, "/") {
+		panic(fmt.Sprintf("Unable to register controller: `%s`, controller path has to start with `/`. Check Controller `Version()` and `Prefix()` method implementation ", fullCtrlName))
+	}
+
 	// log registration for debugging purposes
-	a.Logger.Debug(fmt.Sprintf("Registering `%s` with Prefix: `%s`", fullCtrlName, prefix))
+	a.Logger.Debug(fmt.Sprintf("Registering `%s` with Path: `%s`", fullCtrlName, path))
 
 	ctrlRouter, ok := ctrl.(ControllerRouter)
 	if !ok {
@@ -221,14 +237,7 @@ func (a *App) RegisterController(ctrl interface{}) {
 
 	routes := ctrlRouter.Routes()
 
-	//check if we have any dependencies registered
-	if a.container.Len() == 0 {
-		// we dont have any dependencies defined
-		a.router.Attach(prefix, routes)
-		return
-	}
-
-	a.router.Attach(prefix, routes)
+	a.router.Attach(path, routes)
 }
 
 // MethodNotAllowedHandler is Handler where message and error can be personalized
