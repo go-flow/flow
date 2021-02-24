@@ -4,8 +4,8 @@ import "io"
 
 // Data renders byte array
 type Data struct {
-	Data        []byte
-	contentType []string
+	Data  []byte
+	CType []string
 }
 
 // Render writes []byte to io.Writer
@@ -16,5 +16,5 @@ func (r Data) Render(out io.Writer) (err error) {
 
 // ContentType returns contentType for renderer
 func (r Data) ContentType() []string {
-	return r.contentType
+	return r.CType
 }

@@ -169,6 +169,7 @@ func (s *StructInjector) Inject(dest interface{}, ctx ...reflect.Value) {
 
 	v := IndirectValue(ValueOf(dest))
 	s.InjectElem(v, ctx...)
+
 }
 
 // InjectElem same as `Inject` but accepts a reflect.Value and bind the necessary fields directly.

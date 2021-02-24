@@ -123,3 +123,26 @@ func (c *Container) addIfNotExists(val reflect.Value) bool {
 	c.Add(val)
 	return true
 }
+
+// Register appends one or more values as dependecies
+func (c *Container) Register(value interface{}) {
+	if c.Len() == 0 {
+		c.Add(value)
+		return
+	}
+
+	// create injector
+	injector := Struct(value, *c...)
+
+	// inject dependencies to value
+	injector.Inject(value)
+
+	c.AddOnce(value)
+}
+
+// InjectDeps accepts a destination struct and any optional context value(s),
+// and injects registered dependencies to the destination object
+func (c *Container) InjectDeps(dest interface{}, ctx ...reflect.Value) {
+	injector := Struct(dest, *c...)
+	injector.Inject(dest, ctx...)
+}
