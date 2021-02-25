@@ -17,6 +17,9 @@ type Route struct {
 type Routes []Route
 
 func (rt *Route) HandleRequest(w http.ResponseWriter, r *http.Request) Response {
+	if rt.Mws == nil {
+		return rt.Handler(r)
+	}
 	if err := rt.Mws.handle(w, r); err != nil {
 		return ResponseError(http.StatusInternalServerError, err)
 	}

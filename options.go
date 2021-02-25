@@ -9,6 +9,7 @@ const (
 	defaultRedirectTrailingSlash  = true
 	defaultRedirectFixedPath      = true
 	defaultHandleMethodNotAllowed = true
+	defaultHandleOptions          = true
 
 	default404Body = "404 page not found"
 	default405Body = "405 method not allowed"
@@ -20,9 +21,6 @@ type Options struct {
 	Name    string
 	Addr    string
 	Version string
-
-	Body404 string
-	Body405 string
 }
 
 type RouterOptions struct {
@@ -30,6 +28,9 @@ type RouterOptions struct {
 	RedirectFixedPath      bool
 	HandleMethodNotAllowed bool
 	SaveMatchedRoutePath   bool
+	HandleOptions          bool
+	Body404                string
+	Body405                string
 }
 
 func NewOptions() Options {
@@ -38,15 +39,15 @@ func NewOptions() Options {
 			RedirectTrailingSlash:  defaultRedirectTrailingSlash,
 			RedirectFixedPath:      defaultRedirectFixedPath,
 			HandleMethodNotAllowed: defaultHandleMethodNotAllowed,
+			HandleOptions:          defaultHandleOptions,
+			Body404:                default404Body,
+			Body405:                default405Body,
 		},
 
 		Env:     defaultEnv,
 		Name:    defaultName,
 		Addr:    defaultAddr,
 		Version: defaultVersion,
-
-		Body404: default404Body,
-		Body405: default405Body,
 	}
 
 	return opts

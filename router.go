@@ -1,6 +1,9 @@
 package flow
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -39,19 +42,32 @@ type Router struct {
 	// If no other Method is allowed, the request is delegated to the NotFound
 	// handler.
 	HandleMethodNotAllowed bool
+
+	// If enabled, the router automatically replies to OPTIONS requests.
+	// Custom OPTIONS handlers take priority over automatic replies.
+	HandleOptions bool
+
+	// Body404 string to be displayed when route is not found
+	Body404 string
+
+	// Body405 string to be displayed when route is not allowed
+	Body405 string
 }
 
-func NewDefaultRouter() *Router {
+func NewRouter() *Router {
 	opts := NewOptions()
-	return NewRouter(opts.RouterOptions)
+	return NewRouterWithOptions(opts.RouterOptions)
 }
 
-func NewRouter(opts RouterOptions) *Router {
+func NewRouterWithOptions(opts RouterOptions) *Router {
 	return &Router{
 		RedirectTrailingSlash:  opts.RedirectTrailingSlash,
 		RedirectFixedPath:      opts.RedirectFixedPath,
 		HandleMethodNotAllowed: opts.HandleMethodNotAllowed,
+		HandleOptions:          opts.HandleOptions,
 		mws:                    new(MiddlewareStack),
+		Body404:                opts.Body404,
+		Body405:                opts.Body405,
 	}
 }
 
@@ -205,6 +221,75 @@ func (r *Router) Lookup(method, path string) (*Route, Params, bool) {
 		return handle, *ps, tsr
 	}
 	return nil, nil, false
+}
+
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	res := r.dispatchRequest(w, req)
+	if res == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Response can not be nil"))
+		return
+	}
+
+	if err := res.Handle(w, req); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf("Response error: %v", err)))
+		return
+	}
+}
+
+func (r *Router) dispatchRequest(w http.ResponseWriter, req *http.Request) Response {
+	path := req.URL.Path
+	if root := r.trees[req.Method]; root != nil {
+		if route, ps, tsr := root.getValue(path, r.getParams); route != nil {
+			if ps != nil {
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, ParamsKey, *ps)
+				req = req.WithContext(ctx)
+				r.putParams(ps)
+			}
+			return route.HandleRequest(w, req)
+		} else if req.Method != http.MethodConnect && path != "/" {
+			code := http.StatusMovedPermanently
+			if req.Method != http.MethodGet {
+				code = http.StatusPermanentRedirect
+			}
+
+			if tsr && r.RedirectTrailingSlash {
+				if len(path) > 1 && path[len(path)-1] == '/' {
+					req.URL.Path = path[:len(path)-1]
+				} else {
+					req.URL.Path = path + "/"
+				}
+				return ResponseRedirect(code, req.URL.String())
+			}
+			if r.RedirectFixedPath {
+				fixedPath, found := root.findCaseInsensitivePath(
+					CleanPath(path),
+					r.RedirectTrailingSlash,
+				)
+				if found {
+					req.URL.Path = fixedPath
+					return ResponseRedirect(code, req.URL.String())
+				}
+			}
+		}
+	}
+
+	if req.Method == http.MethodOptions && r.HandleOptions {
+		if allow := r.allowed(path, http.MethodOptions); allow != "" {
+			w.Header().Set("Allow", allow)
+			return ResponseError(http.StatusOK, errors.New(""))
+		}
+
+	} else if r.HandleMethodNotAllowed {
+		if allow := r.allowed(path, req.Method); allow != "" {
+			w.Header().Set("Allow", allow)
+			return ResponseError(http.StatusMethodNotAllowed, errors.New(r.Body405))
+		}
+	}
+
+	return ResponseError(http.StatusNotFound, errors.New(r.Body404))
 }
 
 func (r *Router) allowed(path, reqMethod string) (allow string) {
