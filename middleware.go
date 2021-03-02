@@ -8,9 +8,9 @@ type MiddlewareFunc func(w http.ResponseWriter, r *http.Request) error
 // MiddlewareHandlerFunc defines middleware interface
 //
 // func DoSomething(next MiddlewareFunc) MiddlewareFunc {
-// 	return func(c *Context) error {
+// 	return func(w http.ResponseWriter, r *http.Request) error {
 // 		// do something before calling the next handler
-// 		err := next(c)
+// 		err := next(w, r)
 // 		// do something after call the handler
 // 		return err
 // 	}

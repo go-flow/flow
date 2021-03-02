@@ -16,6 +16,7 @@ type Route struct {
 // Routes is Route collection
 type Routes []Route
 
+// HandleRequest handles http request. It executes all route middlewares and action handler
 func (rt *Route) HandleRequest(w http.ResponseWriter, r *http.Request) Response {
 	if rt.Mws == nil {
 		return rt.Handler(r)

@@ -54,11 +54,13 @@ type Router struct {
 	Body405 string
 }
 
+// NewRouter creates new Router instance with default options
 func NewRouter() *Router {
 	opts := NewOptions()
 	return NewRouterWithOptions(opts.RouterOptions)
 }
 
+// NewRouterWithOptions creates new Router instance for given options
 func NewRouterWithOptions(opts RouterOptions) *Router {
 	return &Router{
 		RedirectTrailingSlash:  opts.RedirectTrailingSlash,
