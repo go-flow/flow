@@ -40,6 +40,7 @@ func (re *responseError) Handle(w http.ResponseWriter, r *http.Request) error {
 
 }
 
+// ResponseError creates new Error response for given http code and error
 func ResponseError(code int, err error) Response {
 	return &responseError{
 		code: code,
@@ -57,6 +58,7 @@ func (rr *responseRedirect) Handle(w http.ResponseWriter, r *http.Request) error
 	return nil
 }
 
+// ResponseRedirect creates Redirect ewsponse for given http code and destination URL
 func ResponseRedirect(code int, url string) Response {
 	return &responseRedirect{
 		code: code,
@@ -73,6 +75,7 @@ func (rf *responseFile) Handle(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// ResponseFile serves content from given file
 func ResponseFile(filepath string) Response {
 	return &responseFile{
 		filepath: filepath,
@@ -100,7 +103,7 @@ func (rd *responseDownload) Handle(w http.ResponseWriter, r *http.Request) error
 	return err
 }
 
-// DownloadResult creates file attachment ActionResult with following headers:
+// ResponseDownload creates file attachment ActionResult with following headers:
 //
 //   Content-Type
 //   Content-Length
@@ -173,7 +176,7 @@ func ResponseData(code int, data []byte, contentType []string) Response {
 	}
 }
 
-// ReaderResult creates io.Reader render Response
+// ResponseReader creates io.Reader render Response for given http code, reader and content type
 func ResponseReader(code int, reader io.Reader, contentType []string) Response {
 	return &responseRender{
 		Renderer: render.Reader{

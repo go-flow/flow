@@ -15,6 +15,7 @@ const (
 	default405Body = "405 method not allowed"
 )
 
+// Options holds application configuration Options
 type Options struct {
 	RouterOptions
 	Env     string
@@ -23,6 +24,7 @@ type Options struct {
 	Version string
 }
 
+// RouterOptions holds router configuration Options
 type RouterOptions struct {
 	RedirectTrailingSlash  bool
 	RedirectFixedPath      bool
@@ -33,6 +35,7 @@ type RouterOptions struct {
 	Body405                string
 }
 
+// NewOptions creates New application Options instance
 func NewOptions() Options {
 	opts := Options{
 		RouterOptions: RouterOptions{
