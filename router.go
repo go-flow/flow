@@ -12,6 +12,7 @@ import (
 // Router is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Router struct {
+	parent     *Router
 	root       bool
 	basePath   string
 	trees      map[string]*node
@@ -79,12 +80,20 @@ func NewRouterWithOptions(opts RouterOptions) *Router {
 }
 
 func (r *Router) getParams() *Params {
+	if r.parent != nil {
+		return r.parent.getParams()
+	}
+
 	ps, _ := r.paramsPool.Get().(*Params)
 	*ps = (*ps)[0:0] // reset slice
 	return ps
 }
 
 func (r *Router) putParams(ps *Params) {
+	if r.parent != nil {
+		r.parent.putParams(ps)
+		return
+	}
 	if ps != nil {
 		r.paramsPool.Put(ps)
 	}
@@ -140,11 +149,11 @@ func (r *Router) Group(path string, middlewares ...MiddlewareHandlerFunc) *Route
 		RedirectFixedPath:      r.RedirectFixedPath,
 		HandleMethodNotAllowed: r.HandleMethodNotAllowed,
 		HandleOptions:          r.HandleOptions,
+		parent:                 r,
 		root:                   false,
 		basePath:               joinPaths(r.basePath, path),
 		mws:                    r.mws.Clone(middlewares...),
 		trees:                  r.trees,
-		maxParams:              r.maxParams,
 		Body404:                r.Body404,
 		Body405:                r.Body405,
 	}
@@ -184,7 +193,6 @@ func (r *Router) Routes() (routes Routes) {
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
 func (r *Router) Handle(method, path string, handler HandlerFunc, middlewares ...MiddlewareHandlerFunc) {
-	varsCount := uint16(0)
 
 	if method == "" {
 		panic("method must not be empty")
@@ -213,18 +221,7 @@ func (r *Router) Handle(method, path string, handler HandlerFunc, middlewares ..
 
 	root.addRoute(path, route)
 
-	// Update maxParams
-	if paramsCount := countParams(path); paramsCount+varsCount > r.maxParams {
-		r.maxParams = paramsCount + varsCount
-	}
-
-	// Lazy-init paramsPool alloc func
-	if r.paramsPool.New == nil && r.maxParams > 0 {
-		r.paramsPool.New = func() interface{} {
-			ps := make(Params, 0, r.maxParams)
-			return &ps
-		}
-	}
+	r.updateParams(path)
 
 }
 
@@ -315,6 +312,26 @@ func (r *Router) dispatchRequest(w http.ResponseWriter, req *http.Request) Respo
 	}
 
 	return ResponseError(http.StatusNotFound, errors.New(r.Body404))
+}
+
+func (r *Router) updateParams(path string) {
+	if r.parent != nil {
+		r.parent.updateParams(path)
+		return
+	}
+	// Update maxParams
+	if paramsCount := countParams(path); paramsCount > r.maxParams {
+		r.maxParams = paramsCount
+	}
+
+	// Lazy-init paramsPool alloc func
+	if r.paramsPool.New == nil && r.maxParams > 0 {
+		r.paramsPool.New = func() interface{} {
+			ps := make(Params, 0, r.maxParams)
+			return &ps
+		}
+	}
+
 }
 
 func (r *Router) allowed(path, reqMethod string) (allow string) {

@@ -125,7 +125,7 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 				}
 			}
 
-			m.imports = append(m.imports, module)
+			module.imports = append(module.imports, m)
 		}
 	}
 
@@ -245,7 +245,6 @@ func (m *Module) Router() (*Router, error) {
 }
 
 func (m *Module) registerControllers(parent string, r *Router) error {
-
 	if v, ok := m.factory.(ModuleController); ok {
 		for _, ctrl := range v.Controllers() {
 			// get controller type
@@ -296,9 +295,8 @@ func (m *Module) registerControllers(parent string, r *Router) error {
 
 			if val, ok := ctrl.(ControllerRouter); ok {
 				rPath := fmt.Sprintf("%s%s", parent, m.Path())
-				fmt.Printf("registering controller `%s` for module `%s` with path: `%s` \n", name, m.name, rPath)
-				r := m.router.Group(rPath)
-				val.Routes(r)
+				gRouter := r.Group(rPath)
+				val.Routes(gRouter)
 			} else {
 				return fmt.Errorf("unable to register controller %s in module %s: controller does not implement ControllerRouter interface", name, m.name)
 			}
