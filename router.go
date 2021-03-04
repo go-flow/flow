@@ -12,6 +12,8 @@ import (
 // Router is a http.Handler which can be used to dispatch requests to different
 // handler functions via configurable routes
 type Router struct {
+	root       bool
+	basePath   string
 	trees      map[string]*node
 	paramsPool sync.Pool
 	maxParams  uint16
@@ -63,11 +65,14 @@ func NewRouter() *Router {
 // NewRouterWithOptions creates new Router instance for given options
 func NewRouterWithOptions(opts RouterOptions) *Router {
 	return &Router{
+		root:                   true,
+		basePath:               "/",
+		mws:                    new(MiddlewareStack),
+		trees:                  make(map[string]*node),
 		RedirectTrailingSlash:  opts.RedirectTrailingSlash,
 		RedirectFixedPath:      opts.RedirectFixedPath,
 		HandleMethodNotAllowed: opts.HandleMethodNotAllowed,
 		HandleOptions:          opts.HandleOptions,
-		mws:                    new(MiddlewareStack),
 		Body404:                opts.Body404,
 		Body405:                opts.Body405,
 	}
@@ -125,6 +130,26 @@ func (r *Router) Use(mw ...MiddlewareHandlerFunc) {
 	r.mws.Append(mw...)
 }
 
+// Group creates a new router group.
+//
+// You should add all the routes that have common middlewares or the same path prefix.
+// For example, all the routes that use a common middleware for authorization could be grouped.
+func (r *Router) Group(path string, middlewares ...MiddlewareHandlerFunc) *Router {
+	return &Router{
+		RedirectTrailingSlash:  r.RedirectTrailingSlash,
+		RedirectFixedPath:      r.RedirectFixedPath,
+		HandleMethodNotAllowed: r.HandleMethodNotAllowed,
+		HandleOptions:          r.HandleOptions,
+		root:                   false,
+		basePath:               joinPaths(r.basePath, path),
+		mws:                    r.mws.Clone(middlewares...),
+		trees:                  r.trees,
+		maxParams:              r.maxParams,
+		Body404:                r.Body404,
+		Body405:                r.Body405,
+	}
+}
+
 // Attach another router to current one
 func (r *Router) Attach(prefix string, router *Router) {
 	for _, route := range router.Routes() {
@@ -171,9 +196,7 @@ func (r *Router) Handle(method, path string, handler HandlerFunc, middlewares ..
 		panic("handler must not be nil")
 	}
 
-	if r.trees == nil {
-		r.trees = make(map[string]*node)
-	}
+	path = joinPaths(r.basePath, path)
 
 	root := r.trees[method]
 	if root == nil {
