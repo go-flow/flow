@@ -14,48 +14,6 @@ import (
 	"github.com/go-flow/flow/di"
 )
 
-// ModuleProvider is interface used for injecting dependecies that can be used in the module
-type ModuleProvider interface {
-	Providers() []interface{}
-}
-
-// ModulePather is interface used to define http path for Module
-type ModulePather interface {
-	Path() string
-}
-
-// ModuleImporter interface is used to for providing list of imported modules
-// that export providers that arerequired in this module
-type ModuleImporter interface {
-	Imports() []interface{}
-}
-
-// ModuleExporter interface is used for exporting functionalities to modules that import the module
-type ModuleExporter interface {
-	Exports() []interface{}
-}
-
-// ModuleIniter is interface used for Module Initialization
-type ModuleIniter interface {
-	Init() error
-}
-
-// ModuleOptioner is interface used for providing Application Options
-// This interface is used only for root module or AppModule
-type ModuleOptioner interface {
-	Options() Options
-}
-
-// ModuleRouter interface alows module to define custom Routing
-type ModuleRouter interface {
-	Router() *Router
-}
-
-// ModuleController interface allows module to define Controllers
-type ModuleController interface {
-	Controllers() []interface{}
-}
-
 // Module struct
 type Module struct {
 	factory   interface{}
@@ -92,17 +50,6 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 		parent:    parent,
 	}
 
-	// get module options
-	if v, ok := factory.(ModuleOptioner); ok {
-		module.options = v.Options()
-	} else if module.parent == nil && !module.options.initialized {
-		// ensure options are initialized at least for root module
-		module.options = NewOptions()
-	} else if module.parent != nil {
-		// inherit parent options
-		module.options = module.parent.options
-	}
-
 	// register all providers to module container
 	if v, ok := factory.(ModuleProvider); ok {
 		for _, provider := range v.Providers() {
@@ -136,6 +83,17 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 		if err := v.Init(); err != nil {
 			return nil, fmt.Errorf("Unable to initialize module %s. error : %v", module.name, err)
 		}
+	}
+
+	// get module options
+	if v, ok := factory.(ModuleOptioner); ok {
+		module.options = v.Options()
+	} else if module.parent == nil && !module.options.initialized {
+		// ensure options are initialized at least for root module
+		module.options = NewOptions()
+	} else if module.parent != nil {
+		// inherit parent options
+		module.options = module.parent.options
 	}
 
 	return module, nil
