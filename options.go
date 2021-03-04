@@ -13,15 +13,23 @@ const (
 
 	default404Body = "404 page not found"
 	default405Body = "405 method not allowed"
+
+	defaultModuleSuffix     = "Module"
+	defaultControllerSuffix = "Controller"
+	defaultControllerIndex  = "Index"
 )
 
 // Options holds application configuration Options
 type Options struct {
 	RouterOptions
-	Env     string
-	Name    string
-	Addr    string
-	Version string
+	initialized      bool
+	Env              string
+	Name             string
+	Addr             string
+	Version          string
+	ModuleSuffix     string
+	ControllerSuffix string
+	ControllerIndex  string
 }
 
 // RouterOptions holds router configuration Options
@@ -46,11 +54,14 @@ func NewOptions() Options {
 			Body404:                default404Body,
 			Body405:                default405Body,
 		},
-
-		Env:     defaultEnv,
-		Name:    defaultName,
-		Addr:    defaultAddr,
-		Version: defaultVersion,
+		initialized:      true,
+		Env:              defaultEnv,
+		Name:             defaultName,
+		Addr:             defaultAddr,
+		Version:          defaultVersion,
+		ModuleSuffix:     defaultModuleSuffix,
+		ControllerSuffix: defaultControllerSuffix,
+		ControllerIndex:  defaultControllerIndex,
 	}
 
 	return opts
