@@ -244,9 +244,6 @@ reference GitHub issues that this commit **Closes**.
 **Breaking Changes** should start with the word `BREAKING CHANGE:` with a space or two newlines. The rest of the commit message is then used for this.
 
 
-
-
-[dev-doc]: https://github.com/go-flow/flow/blob/master/docs/DEVELOPER.md
 [github]: https://github.com/go-flow/flow
 
 
