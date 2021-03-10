@@ -70,7 +70,7 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 			// check if imported module exports any functionality
 			if val, ok := dep.(ModuleExporter); ok {
 				for _, exp := range val.Exports() {
-					module.container.Register(exp)
+					module.container.Add(exp)
 				}
 			}
 
