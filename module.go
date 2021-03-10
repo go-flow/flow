@@ -53,7 +53,9 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 	// register all providers to module container
 	if v, ok := factory.(ModuleProvider); ok {
 		for _, provider := range v.Providers() {
-			module.container.Register(provider)
+			if err := module.container.ProvideAndRegister(provider); err != nil {
+				return nil, fmt.Errorf("Unable to register provider for module  `%s`. Error: %v", module.name, err)
+			}
 		}
 	}
 
@@ -79,7 +81,11 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 	// initialize module
 	if v, ok := factory.(ModuleIniter); ok {
 		//inject dependecies to module factory
-		module.container.InjectDeps(factory)
+		// only if it is root module
+		if module.parent == nil {
+			module.container.InjectDeps(factory)
+		}
+
 		if err := v.Init(); err != nil {
 			return nil, fmt.Errorf("Unable to initialize module %s. error : %v", module.name, err)
 		}
@@ -204,7 +210,13 @@ func (m *Module) Router() (*Router, error) {
 
 func (m *Module) registerControllers(parent string, r *Router) error {
 	if v, ok := m.factory.(ModuleController); ok {
-		for _, ctrl := range v.Controllers() {
+		for _, ctrlP := range v.Controllers() {
+
+			ctrl, err := m.container.Provide(ctrlP)
+			if err != nil {
+				return fmt.Errorf("module %s can not invoke controller constructor %v", m.name, ctrlP)
+			}
+
 			// get controller type
 			typ := reflect.TypeOf(ctrl)
 			//get controller name
@@ -221,9 +233,6 @@ func (m *Module) registerControllers(parent string, r *Router) error {
 			if !strings.HasSuffix(name, m.options.ControllerSuffix) {
 				return fmt.Errorf("controller %s in module %s does not follow naming convention", name, m.name)
 			}
-
-			// inject dependecies to controller
-			m.container.InjectDeps(ctrl)
 
 			// initialize controller
 			if val, ok := ctrl.(ModuleIniter); ok {

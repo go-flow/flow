@@ -1,6 +1,8 @@
 package di
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -98,6 +100,15 @@ func (c Container) valueTypeExists(typ reflect.Type) bool {
 	return false
 }
 
+func (c Container) getTypeVal(typ reflect.Type) (reflect.Value, bool) {
+	for _, in := range c {
+		if equalTypes(in.Type(), typ) {
+			return in, true
+		}
+	}
+	return reflect.Value{}, false
+}
+
 // AddOnce binds a value to the controller's field with the same type,
 // if it's not binded already.
 //
@@ -145,4 +156,42 @@ func (c *Container) Register(value interface{}) {
 func (c *Container) InjectDeps(dest interface{}, ctx ...reflect.Value) {
 	injector := Struct(dest, *c...)
 	injector.Inject(dest, ctx...)
+}
+
+// Provide registers constructor function and
+// invokes it with injected values from container to constructor
+func (c *Container) Provide(constructor interface{}) (interface{}, error) {
+
+	typ := reflect.TypeOf(constructor)
+	if typ == nil {
+		return nil, errors.New("can't provide an untyped nil")
+	}
+
+	if typ.Kind() != reflect.Func {
+		return nil, fmt.Errorf("must provide constructor function, got %v (type %v)", constructor, typ)
+	}
+
+	in := make([]reflect.Value, typ.NumIn())
+
+	for i := 0; i < typ.NumIn(); i++ {
+		t := typ.In(i)
+		if v, ok := c.getTypeVal(t); ok {
+			in[i] = v
+		}
+	}
+	val := reflect.ValueOf(constructor).Call(in)
+
+	return val[0].Interface(), nil
+}
+
+// ProvideAndRegister registers constructor function and
+// creates instances and register them to container
+func (c *Container) ProvideAndRegister(constructor interface{}) error {
+	v, err := c.Provide(constructor)
+	if err != nil {
+		return err
+	}
+
+	c.Add(v)
+	return nil
 }
