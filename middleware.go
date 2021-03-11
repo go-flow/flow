@@ -40,12 +40,10 @@ func (mws *MiddlewareStack) Clone(mw ...MiddlewareHandlerFunc) *MiddlewareStack 
 	return n
 }
 
-func (mws *MiddlewareStack) handle(w http.ResponseWriter, r *http.Request) error {
+func (mws *MiddlewareStack) handle(w http.ResponseWriter, r *http.Request, actionFn func(w http.ResponseWriter, r *http.Request) error) error {
 
 	// define last handler in chain
-	h := func(w http.ResponseWriter, r *http.Request) error {
-		return nil
-	}
+	h := actionFn
 
 	// loop through middlewares and chain calls
 	for i := len(mws.stack) - 1; i >= 0; i-- {
