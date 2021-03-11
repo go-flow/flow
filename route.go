@@ -21,8 +21,18 @@ func (rt *Route) HandleRequest(w http.ResponseWriter, r *http.Request) Response 
 	if rt.Mws == nil {
 		return rt.Handler(r)
 	}
-	if err := rt.Mws.handle(w, r); err != nil {
+
+	var resp Response
+
+	chain := rt.Mws.Clone((func(next MiddlewareFunc) MiddlewareFunc {
+		return func(w http.ResponseWriter, r *http.Request) error {
+			resp = rt.Handler(r)
+			return nil
+		}
+	}))
+
+	if err := chain.handle(w, r); err != nil {
 		return ResponseError(http.StatusInternalServerError, err)
 	}
-	return rt.Handler(r)
+	return resp
 }
