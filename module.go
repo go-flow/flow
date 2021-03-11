@@ -61,7 +61,12 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 
 	// register all dependecies (imported modules)
 	if v, ok := factory.(ModuleImporter); ok {
-		for _, dep := range v.Imports() {
+		for _, provider := range v.Imports() {
+
+			dep, err := module.container.Provide(provider)
+			if err != nil {
+				return nil, fmt.Errorf("Unable to Import dependecy for module `%s`. Error: %v", module.name, err)
+			}
 			m, err := NewModule(dep, module.container.Clone(), module)
 			if err != nil {
 				return nil, fmt.Errorf("Unable to Import dependecy module `%s`. Error: %v", m.name, err)
