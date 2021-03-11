@@ -63,6 +63,11 @@ type ModuleController interface {
 	Controllers() []interface{}
 }
 
+// ModuleMiddleware interface allows module to define their routing middlewares
+type ModuleMiddleware interface {
+	Middlewares() []MiddlewareHandlerFunc
+}
+
 // ControllerRouter interface allows controllers to define their routing logic
 type ControllerRouter interface {
 	Routes(*Router)

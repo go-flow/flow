@@ -198,6 +198,11 @@ func (m *Module) Router() (*Router, error) {
 		m.router = NewRouterWithOptions(m.options.RouterOptions)
 	}
 
+	//check if module provides middlewares
+	if v, ok := m.factory.(ModuleMiddleware); ok {
+		m.router.Use(v.Middlewares()...)
+	}
+
 	//register controllers for current module
 	if err := m.registerControllers("", m.router); err != nil {
 		return nil, err
