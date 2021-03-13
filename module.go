@@ -50,11 +50,15 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 		parent:    parent,
 	}
 
-	// register all providers to module container
-	if v, ok := factory.(ModuleProvider); ok {
-		for _, provider := range v.Providers() {
-			if err := module.container.ProvideAndRegister(provider); err != nil {
-				return nil, fmt.Errorf("Unable to register provider for module  `%s`. Error: %v", module.name, err)
+	// import providers first for root module
+	// root module provides dependecies for all child modules.
+	if parent == nil {
+		// register all providers to module container
+		if v, ok := factory.(ModuleProvider); ok {
+			for _, provider := range v.Providers() {
+				if err := module.container.ProvideAndRegister(provider); err != nil {
+					return nil, fmt.Errorf("Unable to register provider for module  `%s`. Error: %w", module.name, err)
+				}
 			}
 		}
 	}
@@ -63,23 +67,46 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 	if v, ok := factory.(ModuleImporter); ok {
 		for _, provider := range v.Imports() {
 
+			// provide module factory object
 			dep, err := module.container.Provide(provider)
 			if err != nil {
-				return nil, fmt.Errorf("Unable to Import dependecy for module `%s`. Error: %v", module.name, err)
+				return nil, fmt.Errorf("Unable to import dependecy for module `%s`. Error: %w", module.name, err)
 			}
+			// create module object
 			m, err := NewModule(dep, module.container.Clone(), module)
 			if err != nil {
-				return nil, fmt.Errorf("Unable to Import dependecy module `%s`. Error: %v", m.name, err)
+				return nil, fmt.Errorf("Unable to Import dependecy for module `%s`. Error: %w", module.name, err)
 			}
 
 			// check if imported module exports any functionality
 			if val, ok := dep.(ModuleExporter); ok {
 				for _, exp := range val.Exports() {
-					module.container.Add(exp)
+					e, err := m.container.Provide(exp)
+					if err != nil {
+						return nil, fmt.Errorf("Unable to provide exported dependecy for module `%s`. Error: %w", m.name, err)
+					}
+					// add feature to module
+					m.container.Add(e)
+					// add feature to parent module
+					module.container.Add(e)
 				}
 			}
 
 			module.imports = append(module.imports, m)
+		}
+	}
+
+	// import all providers for child modules
+	// child modules first register their child modules,
+	// and then they provide functionality internally which can depend on child modules
+	if parent != nil {
+		// register all providers to module container
+		if v, ok := factory.(ModuleProvider); ok {
+			for _, provider := range v.Providers() {
+				if err := module.container.ProvideAndRegister(provider); err != nil {
+					return nil, fmt.Errorf("Unable to register provider for module  `%s`. Error: %w", module.name, err)
+				}
+			}
 		}
 	}
 
@@ -92,7 +119,7 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 		}
 
 		if err := v.Init(); err != nil {
-			return nil, fmt.Errorf("Unable to initialize module %s. error : %v", module.name, err)
+			return nil, fmt.Errorf("Unable to initialize module %s. Error : %w", module.name, err)
 		}
 	}
 
@@ -132,7 +159,7 @@ func (m *Module) Serve() error {
 	go func() {
 		<-c
 		if err := srv.Shutdown(context.Background()); err != nil {
-			panic(fmt.Errorf("Unable to gracefully shutdown HTTP.Server, error: %w", err))
+			panic(fmt.Errorf("Unable to gracefully shutdown HTTP.Server. Error: %w", err))
 		}
 	}()
 
@@ -224,7 +251,7 @@ func (m *Module) registerControllers(parent string, r *Router) error {
 
 			ctrl, err := m.container.Provide(ctrlP)
 			if err != nil {
-				return fmt.Errorf("module %s can not invoke controller constructor %v", m.name, ctrlP)
+				return fmt.Errorf("module %s can not invoke controller constructor. Error: %w", m.name, err)
 			}
 
 			// get controller type
@@ -247,7 +274,7 @@ func (m *Module) registerControllers(parent string, r *Router) error {
 			// initialize controller
 			if val, ok := ctrl.(ModuleIniter); ok {
 				if err := val.Init(); err != nil {
-					return fmt.Errorf("unable to initialize controller %s in module %s: %w", name, m.name, err)
+					return fmt.Errorf("unable to initialize controller %s in module %s. Error: %w", name, m.name, err)
 				}
 			}
 
