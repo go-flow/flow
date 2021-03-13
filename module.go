@@ -39,7 +39,7 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 
 	// factory object has to be pointer
 	if typ.Kind() != reflect.Ptr {
-		return nil, fmt.Errorf("Module factory object %s has to be pointer", name)
+		return nil, fmt.Errorf("module factory object %s has to be pointer", name)
 	}
 
 	// create new module instance
@@ -57,7 +57,7 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 		if v, ok := factory.(ModuleProvider); ok {
 			for _, provider := range v.Providers() {
 				if err := module.container.ProvideAndRegister(provider); err != nil {
-					return nil, fmt.Errorf("Unable to register provider for module  `%s`. Error: %w", module.name, err)
+					return nil, fmt.Errorf("unable to register provider for module  `%s`. Error: %w", module.name, err)
 				}
 			}
 		}
@@ -70,12 +70,12 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 			// provide module factory object
 			dep, err := module.container.Provide(provider)
 			if err != nil {
-				return nil, fmt.Errorf("Unable to import dependecy for module `%s`. Error: %w", module.name, err)
+				return nil, fmt.Errorf("unable to import dependecy for module `%s`. Error: %w", module.name, err)
 			}
 			// create module object
 			m, err := NewModule(dep, module.container.Clone(), module)
 			if err != nil {
-				return nil, fmt.Errorf("Unable to Import dependecy for module `%s`. Error: %w", module.name, err)
+				return nil, fmt.Errorf("unable to import dependecy for module `%s`. Error: %w", module.name, err)
 			}
 
 			// check if imported module exports any functionality
@@ -83,7 +83,7 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 				for _, exp := range val.Exports() {
 					e, err := m.container.Provide(exp)
 					if err != nil {
-						return nil, fmt.Errorf("Unable to provide exported dependecy for module `%s`. Error: %w", m.name, err)
+						return nil, fmt.Errorf("unable to provide exported dependecy for module `%s`. Error: %w", m.name, err)
 					}
 					// add feature to module
 					m.container.Add(e)
@@ -104,7 +104,7 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 		if v, ok := factory.(ModuleProvider); ok {
 			for _, provider := range v.Providers() {
 				if err := module.container.ProvideAndRegister(provider); err != nil {
-					return nil, fmt.Errorf("Unable to register provider for module  `%s`. Error: %w", module.name, err)
+					return nil, fmt.Errorf("unable to register provider for module  `%s`. Error: %w", module.name, err)
 				}
 			}
 		}
@@ -119,7 +119,7 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 		}
 
 		if err := v.Init(); err != nil {
-			return nil, fmt.Errorf("Unable to initialize module %s. Error : %w", module.name, err)
+			return nil, fmt.Errorf("unable to initialize module %s. Error : %w", module.name, err)
 		}
 	}
 
@@ -159,7 +159,7 @@ func (m *Module) Serve() error {
 	go func() {
 		<-c
 		if err := srv.Shutdown(context.Background()); err != nil {
-			panic(fmt.Errorf("Unable to gracefully shutdown HTTP.Server. Error: %w", err))
+			panic(fmt.Errorf("unable to gracefully shutdown HTTP.Server. Error: %w", err))
 		}
 	}()
 

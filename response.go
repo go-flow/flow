@@ -13,12 +13,17 @@ import (
 
 // Response defines interface for HTTP action responses
 type Response interface {
+	Status() int
 	Handle(w http.ResponseWriter, r *http.Request) error
 }
 
 type responseError struct {
 	err  error
 	code int
+}
+
+func (re *responseError) Status() int {
+	return re.code
 }
 
 func (re *responseError) Handle(w http.ResponseWriter, r *http.Request) error {
@@ -53,6 +58,10 @@ type responseRedirect struct {
 	code int
 }
 
+func (re *responseRedirect) Status() int {
+	return re.code
+}
+
 func (rr *responseRedirect) Handle(w http.ResponseWriter, r *http.Request) error {
 	http.Redirect(w, r, rr.url, rr.code)
 	return nil
@@ -70,6 +79,10 @@ type responseFile struct {
 	filepath string
 }
 
+func (responseFile) Status() int {
+	return http.StatusOK
+}
+
 func (rf *responseFile) Handle(w http.ResponseWriter, r *http.Request) error {
 	http.ServeFile(w, r, rf.filepath)
 	return nil
@@ -85,6 +98,10 @@ func ResponseFile(filepath string) Response {
 type responseDownload struct {
 	name   string
 	reader io.Reader
+}
+
+func (responseDownload) Status() int {
+	return http.StatusOK
 }
 
 func (rd *responseDownload) Handle(w http.ResponseWriter, r *http.Request) error {
@@ -121,6 +138,10 @@ func ResponseDownload(name string, reader io.Reader) Response {
 type responseRender struct {
 	render.Renderer
 	code int
+}
+
+func (re *responseRender) Status() int {
+	return re.code
 }
 
 func (rr *responseRender) Handle(w http.ResponseWriter, r *http.Request) error {

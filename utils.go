@@ -1,23 +1,10 @@
 package flow
 
 import (
-	"fmt"
-	"io/ioutil"
 	"path"
-	"reflect"
 	"regexp"
-	"runtime"
 	"strings"
 )
-
-func filterFlags(content string) string {
-	for i, char := range content {
-		if char == ' ' || char == ';' {
-			return content[:i]
-		}
-	}
-	return content
-}
 
 func iterate(path, method string, routes Routes, root *node) Routes {
 	path += root.path
@@ -26,10 +13,6 @@ func iterate(path, method string, routes Routes, root *node) Routes {
 		routes = iterate(path, method, routes, child)
 	}
 	return routes
-}
-
-func nameOfFunction(f interface{}) string {
-	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
 
 func lastChar(str string) uint8 {
@@ -50,54 +33,6 @@ func joinPaths(absolutePath, relativePath string) string {
 		return finalPath + "/"
 	}
 	return finalPath
-}
-
-func byteCountDecimal(b int64) string {
-	const unit = 1000
-	if b < unit {
-		return fmt.Sprintf("%d B", b)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
-}
-
-func byteCountBinary(b int64) string {
-	const unit = 1024
-	if b < unit {
-		return fmt.Sprintf("%d B", b)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %ciB", float64(b)/float64(div), "KMGTPE"[exp])
-}
-
-func loadPartials(viewsRoot, partialsRoot, ext string) ([]string, error) {
-	dirname := path.Join(viewsRoot, partialsRoot)
-	files, err := ioutil.ReadDir(dirname)
-	if err != nil {
-		return nil, err
-	}
-	partials := []string{}
-	for _, f := range files {
-		partial := f.Name()
-		if strings.HasSuffix(partial, ext) {
-			// remove ext from file
-			partial = strings.TrimSuffix(partial, ext)
-			// join file with folder name
-			partial = path.Join(partialsRoot, partial)
-
-			// add to partials
-			partials = append(partials, partial)
-		}
-	}
-	return partials, nil
 }
 
 var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
