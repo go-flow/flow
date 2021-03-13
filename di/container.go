@@ -177,6 +177,8 @@ func (c *Container) Provide(constructor interface{}) (interface{}, error) {
 		t := typ.In(i)
 		if v, ok := c.getTypeVal(t); ok {
 			in[i] = v
+		} else {
+			return nil, fmt.Errorf("Unable to provide constructor, parameter %s is nil for constructor %#v", t.Name(), constructor)
 		}
 	}
 	val := reflect.ValueOf(constructor).Call(in)
