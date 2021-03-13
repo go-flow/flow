@@ -21,14 +21,15 @@ func (rt *Route) HandleRequest(w http.ResponseWriter, r *http.Request) Response 
 	if rt.Mws == nil {
 		return rt.Handler(r)
 	}
-
-	var resp Response
-
-	if err := rt.Mws.handle(w, r, func(w http.ResponseWriter, r *http.Request) error {
-		resp = rt.Handler(r)
-		return nil
-	}); err != nil {
-		return ResponseError(http.StatusInternalServerError, err)
+	// define last handler in chain
+	h := func(_ http.ResponseWriter, r *http.Request) Response {
+		return rt.Handler(r)
 	}
-	return resp
+
+	// loop through middlewares and chain calls
+	for i := len(rt.Mws.stack) - 1; i >= 0; i-- {
+		h = rt.Mws.stack[i](h)
+	}
+
+	return h(w, r)
 }
