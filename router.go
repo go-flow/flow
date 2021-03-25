@@ -310,8 +310,19 @@ func (r *Router) dispatchRequest(w http.ResponseWriter, req *http.Request) Respo
 
 	if req.Method == http.MethodOptions && r.HandleOptions {
 		if allow := r.allowed(path, http.MethodOptions); allow != "" {
-			w.Header().Set("Allow", allow)
-			return ResponseError(http.StatusOK, errors.New(""))
+
+			headers := map[string]string{"Allow": allow}
+
+			r := &Route{
+				Method: req.Method,
+				Path:   path,
+				Mws:    r.mws,
+				Handler: func(r *http.Request) Response {
+					return ResponseHeader(http.StatusNoContent, headers)
+				},
+			}
+
+			return r.HandleRequest(w, req)
 		}
 
 	} else if r.HandleMethodNotAllowed {

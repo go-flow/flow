@@ -75,6 +75,30 @@ func ResponseRedirect(code int, url string) Response {
 	}
 }
 
+type responseHeaders struct {
+	code    int
+	headers map[string]string
+}
+
+func (rh *responseHeaders) Status() int {
+	return rh.code
+}
+
+func (rh *responseHeaders) Handle(w http.ResponseWriter, r *http.Request) error {
+	for k, v := range rh.headers {
+		w.Header().Add(k, v)
+	}
+	w.WriteHeader(rh.code)
+	return nil
+}
+
+func ResponseHeader(code int, headers map[string]string) Response {
+	return &responseHeaders{
+		code:    code,
+		headers: headers,
+	}
+}
+
 type responseFile struct {
 	filepath string
 }
