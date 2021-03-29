@@ -2,8 +2,6 @@ package flow
 
 import (
 	"path"
-	"regexp"
-	"strings"
 )
 
 func iterate(path, method string, routes Routes, root *node) Routes {
@@ -33,22 +31,4 @@ func joinPaths(absolutePath, relativePath string) string {
 		return finalPath + "/"
 	}
 	return finalPath
-}
-
-var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
-var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
-
-func toSnakeCase(str string) string {
-	snake := matchFirstCap.ReplaceAllString(str, "${1}-${2}")
-	snake = matchAllCap.ReplaceAllString(snake, "${1}-${2}")
-	return strings.ToLower(snake)
-}
-
-func contentTypeFromString(ct string) string {
-	for i, char := range ct {
-		if char == ' ' || char == ';' {
-			return ct[:i]
-		}
-	}
-	return ct
 }

@@ -6,76 +6,70 @@ import (
 	"github.com/go-flow/flow/di"
 )
 
-// Content-Type MIME of the most common data formats.
-const (
-	MIMEJSON              = "application/json"
-	MIMEHTML              = "text/html"
-	MIMEXML               = "application/xml"
-	MIMEXML2              = "text/xml"
-	MIMEPlain             = "text/plain"
-	MIMEPOSTForm          = "application/x-www-form-urlencoded"
-	MIMEMultipartPOSTForm = "multipart/form-data"
-	MIMEYAML              = "application/x-yaml"
-)
-
 // HandlerFunc is a function that is registered to a route to handle http requests
 type HandlerFunc func(r *http.Request) Response
 
-// ModuleProvider is interface used for injecting dependecies that can be used in the module
-type ModuleProvider interface {
-	Providers() []interface{}
+// Injector defines Dependency Injector interface
+type Injector interface {
+	Provide(constructor interface{}) (interface{}, error)
 }
 
-// ModulePather is interface used to define http path for Module
-type ModulePather interface {
-	Path() string
+// Importer interface is used for importing module dependecies
+type Importer interface {
+	Imports() []Provider
 }
 
-// ModuleImporter interface is used to for providing list of imported modules
-// that export providers that arerequired in this module
-type ModuleImporter interface {
-	Imports() []interface{}
+// Exporter interface is used for exporting functionalities to modules that import the module
+type Exporter interface {
+	Exports() []Provider
 }
 
-// ModuleExporter interface is used for exporting functionalities to modules that import the module
-type ModuleExporter interface {
-	Exports() []interface{}
+// Moduler interface is used for importing modules as depedecies
+type Moduler interface {
+	Modules() []Provider
 }
 
-// ModuleIniter is interface used for Module Initialization
-type ModuleIniter interface {
+// Initer interface is used for Module Initialization
+type Initer interface {
 	Init() error
 }
 
-// ModuleOptioner is interface used for providing Application Options
-// This interface is used only for root module or AppModule
-type ModuleOptioner interface {
-	Options() Options
+// Pather interface is used to define http path
+type Pather interface {
+	Path() string
 }
 
-// ModuleRouter interface alows module to define custom Routing
-type ModuleRouter interface {
-	Router() *Router
-}
-
-// ModuleController interface allows module to define Controllers
-type ModuleController interface {
-	Controllers() []interface{}
-}
-
-// ModuleMiddleware interface allows module to define their routing middlewares
-type ModuleMiddleware interface {
+// Middlewarer interface defines their routing middlewares
+type Middlewarer interface {
 	Middlewares() []MiddlewareHandlerFunc
 }
 
-// ControllerRouter interface allows controllers to define their routing logic
-type ControllerRouter interface {
-	Routes(*Router)
+// RouterProvider interface is used to define module http routers
+type RouterProvider interface {
+	Routers() []Provider
+}
+
+// ModuleIncluder interface is used on routers to determine
+// if sub module routing should be included in routing
+type ModuleIncluder interface {
+	IncludeChildModules() bool
+}
+
+// ActionHandlerer interface is used to define http action handlers defined by module router
+type ActionHandlerer interface {
+	ActionHandlers() []Provider
+}
+
+// ActionHandler interface is used to define http action handlers defined by module router
+type ActionHandler interface {
+	Method() string
+	Path() string
+	Middlewares() []MiddlewareHandlerFunc
+	Handle(r *http.Request) Response
 }
 
 // Bootstrap creates Flow Module instance for given factory object
-func Bootstrap(moduleFactory interface{}) (*Module, error) {
+func Bootstrap(moduleFactory ModuleFactory) (*Module, error) {
 	rootModule, err := NewModule(moduleFactory, di.NewContainer(), nil)
-
 	return rootModule, err
 }
