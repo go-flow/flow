@@ -3,7 +3,7 @@ package flow
 import (
 	"net/http"
 
-	"github.com/go-flow/flow/di"
+	"github.com/go-flow/flow/v2/di"
 )
 
 // HandlerFunc is a function that is registered to a route to handle http requests

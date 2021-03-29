@@ -12,7 +12,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/go-flow/flow/di"
+	"github.com/go-flow/flow/v2/di"
 )
 
 // Module struct

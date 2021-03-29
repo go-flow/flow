@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/go-flow/flow/render"
+	"github.com/go-flow/flow/v2/render"
 )
 
 type Render struct {

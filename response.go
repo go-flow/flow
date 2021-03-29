@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/go-flow/flow/response"
+	"github.com/go-flow/flow/v2/response"
 )
 
 // Response defines interface for HTTP action responses
