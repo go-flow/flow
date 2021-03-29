@@ -1,3 +1,3 @@
-module github.com/go-flow/flow/v2
+module github.com/go-flow/flow
 
 go 1.15

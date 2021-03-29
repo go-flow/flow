@@ -19,13 +19,13 @@ func (re *Render) Status() int {
 
 func (rr *Render) Handle(w http.ResponseWriter, r *http.Request) error {
 	var res bytes.Buffer
-	if err := rr.Render(&res); err != nil {
+	if err := rr.Renderer.Render(&res); err != nil {
 		return err
 	}
 
 	header := w.Header()
 	if val := header["Content-Type"]; len(val) == 0 {
-		header["Content-Type"] = rr.ContentType()
+		header["Content-Type"] = rr.Renderer.ContentType()
 	}
 
 	w.WriteHeader(rr.code)
