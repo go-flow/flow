@@ -110,18 +110,20 @@ func NewModule(factory ModuleFactory, container di.Container, parent *Module) (*
 		}
 	}
 
-	// get module options
-	if v, ok := factory.(ModuleOptioner); ok {
-		module.options = v.Options()
-	} else if module.parent == nil && !module.options.initialized {
-		// ensure options are initialized at least for root module
-		module.options = NewOptions()
-	} else if module.parent != nil {
-		// inherit parent options
-		module.options = module.parent.options
-	}
-
 	if module.IsRoot() {
+		module.container.InjectDeps(factory)
+
+		// get module options
+		if v, ok := factory.(ModuleOptioner); ok {
+			module.options = v.Options()
+		} else if !module.options.initialized {
+			// ensure options are initialized at least for root module
+			module.options = NewOptions()
+		} else if module.parent != nil {
+			// inherit parent options
+			module.options = module.parent.options
+		}
+
 		module.router = NewRouterWithOptions(module.options.RouterOptions)
 		if err := module.registerRouters(module.router); err != nil {
 			return nil, fmt.Errorf("unable to register routers for module `%s`. Error: %w", module.name, err)
