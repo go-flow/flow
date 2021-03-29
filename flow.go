@@ -14,58 +14,63 @@ type Injector interface {
 	Provide(constructor interface{}) (interface{}, error)
 }
 
-// Importer interface is used for importing module dependecies
-type Importer interface {
-	Imports() []Provider
-}
-
-// Exporter interface is used for exporting functionalities to modules that import the module
-type Exporter interface {
-	Exports() []Provider
-}
-
-// Moduler interface is used for importing modules as depedecies
-type Moduler interface {
-	Modules() []Provider
-}
-
-// Initer interface is used for Module Initialization
-type Initer interface {
-	Init() error
-}
-
-// Pather interface is used to define http path
-type Pather interface {
-	Path() string
-}
-
-// Middlewarer interface defines their routing middlewares
-type Middlewarer interface {
-	Middlewares() []MiddlewareHandlerFunc
-}
-
-// RouterProvider interface is used to define module http routers
-type RouterProvider interface {
-	Routers() []Provider
-}
-
-// ModuleIncluder interface is used on routers to determine
-// if sub module routing should be included in routing
-type ModuleIncluder interface {
-	IncludeChildModules() bool
-}
-
-// ActionHandlerer interface is used to define http action handlers defined by module router
-type ActionHandlerer interface {
-	ActionHandlers() []Provider
-}
-
 // ActionHandler interface is used to define http action handlers defined by module router
 type ActionHandler interface {
 	Method() string
 	Path() string
 	Middlewares() []MiddlewareHandlerFunc
 	Handle(r *http.Request) Response
+}
+
+// ModuleFactory interface for creating flow.Module
+type ModuleFactory interface {
+
+	// ProvideImports returns list of instance providers for module dependecies
+	// This method is used to register all module dependecies
+	// eg. logging, db connection,....
+	// all dependecies that are provided in this method
+	// will be available to all modules imported by the factory
+	ProvideImports() []Provider
+
+	// ProvideExports returns list of instance providers for
+	// functionalities that module will export.
+	// Exported functionalities will be available to other modules that
+	// import module created by the Factory
+	ProvideExports() []Provider
+
+	// ProvideModules returns list of instance providers
+	// for modules that current module depends on
+	ProvideModules() []Provider
+
+	// ProvideRouters returns list of instance providers for module routers.
+	// Module routers are used for http routing
+	ProvideRouters() []Provider
+}
+
+// ModuleOptioner interface is used for providing Application Options
+// This interface is used only for root module or AppModule
+type ModuleOptioner interface {
+	Options() Options
+}
+
+// RouterFactory interface responsible for creating module routers
+type RouterFactory interface {
+	Path() string
+	Middlewares() []MiddlewareHandlerFunc
+	ProvideHandlers() []Provider
+	RegisterSubRouters() bool
+}
+
+// ModuleStarter interface used when http application is served
+// Start method is invoked if module implements the interface
+type ModuleStarter interface {
+	Start() error
+}
+
+// ModuleStopper interface used when http application is stopped
+// Stop method is invoked during shutdown process if module implements the interface
+type ModuleStopper interface {
+	Stop()
 }
 
 // Bootstrap creates Flow Module instance for given factory object

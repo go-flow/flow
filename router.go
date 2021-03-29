@@ -249,7 +249,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 
-			res := ResponseError(http.StatusInternalServerError, fmt.Errorf("panic: %v", err))
+			res := ResponseError(http.StatusInternalServerError, fmt.Errorf("panic: %w", err))
 			if e := res.Handle(w, req); e != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write([]byte(fmt.Sprintf("Response error: %v", e)))
