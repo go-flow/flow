@@ -2,6 +2,7 @@ package flow
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -14,22 +15,59 @@ import (
 	"github.com/go-flow/flow/di"
 )
 
+// ModuleFactory interface for creating flow.Module
+type ModuleFactory interface {
+
+	// ProvideImports returns list of instance providers for module dependecies
+	// This method is used to register all module dependecies
+	// eg. logging, db connection,....
+	// all dependecies that are provided in this method
+	// will be available to all modules imported by the factory
+	ProvideImports() []Provider
+
+	// ProvideExports returns list of instance providers for
+	// functionalities that module will export.
+	// Exported functionalities will be available to other modules that
+	// import module created by the Factory
+	ProvideExports() []Provider
+
+	// ProvideModules returns list of instance providers
+	// for modules that current module depends on
+	ProvideModules() []Provider
+
+	// ProvideRouters returns list of instance providers for module routers.
+	// Module routers are used for http routing
+	ProvideRouters() []Provider
+}
+
+// ModuleOptioner interface is used for providing Application Options
+// This interface is used only for root module or AppModule
+type ModuleOptioner interface {
+	Options() Options
+}
+
+type RouterFactory interface {
+	Path() string
+	Middlewares() []MiddlewareHandlerFunc
+	ProvideHandlers() []Provider
+	RegisterSubRouters() bool
+}
+
 // Module struct
 type Module struct {
-	factory   interface{}
-	options   Options
+	factory   ModuleFactory
 	name      string
-	path      string
+	options   Options
 	container di.Container
 	parent    *Module
+	modules   []*Module
 	router    *Router
-	imports   []*Module
 }
 
 // NewModule creates new Module object
-func NewModule(factory interface{}, container di.Container, parent *Module) (*Module, error) {
+func NewModule(factory ModuleFactory, container di.Container, parent *Module) (*Module, error) {
 	if factory == nil {
-		return nil, fmt.Errorf("factory object can not bi nil")
+		return nil, fmt.Errorf("factory object can not be nil")
 	}
 
 	// get module factory type
@@ -50,76 +88,63 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 		parent:    parent,
 	}
 
-	// import providers first for root module
 	// root module provides dependecies for all child modules.
 	if parent == nil {
-		// register all providers to module container
-		if v, ok := factory.(ModuleProvider); ok {
-			for _, provider := range v.Providers() {
-				if err := module.container.ProvideAndRegister(provider); err != nil {
-					return nil, fmt.Errorf("unable to register provider for module  `%s`. Error: %w", module.name, err)
-				}
+		// register all imports to module container
+		for _, p := range factory.ProvideImports() {
+			obj, err := p.Provide(&module.container)
+			if err != nil {
+				return nil, fmt.Errorf("unable to provide dependecy for module  `%s`. Error: %w", module.name, err)
 			}
+			module.container.Add(obj)
 		}
 	}
 
 	// register all dependecies (imported modules)
-	if v, ok := factory.(ModuleImporter); ok {
-		for _, provider := range v.Imports() {
+	for _, p := range factory.ProvideModules() {
 
-			// provide module factory object
-			dep, err := module.container.Provide(provider)
-			if err != nil {
-				return nil, fmt.Errorf("unable to import dependecy for module `%s`. Error: %w", module.name, err)
-			}
-			// create module object
-			m, err := NewModule(dep, module.container.Clone(), module)
-			if err != nil {
-				return nil, fmt.Errorf("unable to import dependecy for module `%s`. Error: %w", module.name, err)
-			}
-
-			// check if imported module exports any functionality
-			if val, ok := dep.(ModuleExporter); ok {
-				for _, exp := range val.Exports() {
-					e, err := m.container.Provide(exp)
-					if err != nil {
-						return nil, fmt.Errorf("unable to provide exported dependecy for module `%s`. Error: %w", m.name, err)
-					}
-					// add feature to module
-					m.container.Add(e)
-					// add feature to parent module
-					module.container.Add(e)
-				}
-			}
-
-			module.imports = append(module.imports, m)
+		// provide module factory object
+		dep, err := p.Provide(&module.container)
+		if err != nil {
+			return nil, fmt.Errorf("unable to provide dependecy module for module `%s`. Error: %w", module.name, err)
 		}
+
+		depFac, ok := dep.(ModuleFactory)
+		if !ok {
+			return nil, fmt.Errorf("unable to provide dependecy module for module `%s`. Error: %w", module.name, errors.New("provided constructor did not create instance of ModuleFactory interface"))
+		}
+		// create module object
+		m, err := NewModule(depFac, module.container.Clone(), module)
+		if err != nil {
+			return nil, fmt.Errorf("unable to provide dependecy module for module `%s`. Error: %w", module.name, err)
+		}
+
+		// check if imported module exports any functionality
+		for _, p := range depFac.ProvideExports() {
+			exp, err := p.Provide(&m.container)
+			if err != nil {
+				return nil, fmt.Errorf("unable to provide exported dependecy for module `%s`. Error: %w", m.name, err)
+			}
+			// add feature to module
+			m.container.Add(exp)
+			// add feature to parent module
+			module.container.Add(exp)
+		}
+
+		module.modules = append(module.modules, m)
 	}
 
-	// import all providers for child modules
+	// import all dependecies for child modules
 	// child modules first register their child modules,
 	// and then they provide functionality internally which can depend on child modules
 	if parent != nil {
-		// register all providers to module container
-		if v, ok := factory.(ModuleProvider); ok {
-			for _, provider := range v.Providers() {
-				if err := module.container.ProvideAndRegister(provider); err != nil {
-					return nil, fmt.Errorf("unable to register provider for module  `%s`. Error: %w", module.name, err)
-				}
+		for _, p := range factory.ProvideImports() {
+			dep, err := p.Provide(&module.container)
+			if err != nil {
+				return nil, fmt.Errorf("unable to provide dependecy for module  `%s`. Error: %w", module.name, err)
 			}
-		}
-	}
 
-	// initialize module
-	if v, ok := factory.(ModuleIniter); ok {
-		//inject dependecies to module factory
-		// only if it is root module
-		if module.parent == nil {
-			module.container.InjectDeps(factory)
-		}
-
-		if err := v.Init(); err != nil {
-			return nil, fmt.Errorf("unable to initialize module %s. Error : %w", module.name, err)
+			module.container.Add(dep)
 		}
 	}
 
@@ -134,21 +159,79 @@ func NewModule(factory interface{}, container di.Container, parent *Module) (*Mo
 		module.options = module.parent.options
 	}
 
+	if module.IsRoot() {
+		module.router = NewRouterWithOptions(module.options.RouterOptions)
+		if err := module.registerRouters(module.router); err != nil {
+			return nil, fmt.Errorf("unable to register routers for module `%s`. Error: %w", module.name, err)
+		}
+	}
+
 	return module, nil
+}
+
+func (m *Module) registerRouters(r *Router) error {
+
+	// initialize module routers
+	for _, p := range m.factory.ProvideRouters() {
+		// get router provider
+		rp, err := p.Provide(&m.container)
+		if err != nil {
+			return fmt.Errorf("unable to register router provider for module  `%s`. Error: %w", m.name, err)
+		}
+
+		// check if provided object is RouterFactory interface
+		rf, ok := rp.(RouterFactory)
+		if !ok {
+			return fmt.Errorf("unable to register router provider for module `%s`. Error: %w", m.name, errors.New("provided constructor did not create instance of RouterFactory interface"))
+		}
+		group := r.Group(rf.Path(), rf.Middlewares()...)
+
+		// get all action handlers
+		for _, p := range rf.ProvideHandlers() {
+			// provide action handler
+			ah, err := p.Provide(&m.container)
+			if err != nil {
+				return fmt.Errorf("unable to register action handler for module  `%s`. Error: %w", m.name, err)
+			}
+
+			// check if provided object is ActionHandler interface
+			handler, ok := ah.(ActionHandler)
+			if !ok {
+				return fmt.Errorf("unable to register action handler for module  `%s`. Error: %w", m.name, errors.New("provided constructor did not create instance of ActionHandler interface"))
+			}
+
+			group.Handle(handler.Method(), handler.Path(), handler.Handle, handler.Middlewares()...)
+		}
+
+		// check if sub routers should be registered for given router
+		if rf.RegisterSubRouters() {
+			for _, module := range m.modules {
+				if err := module.registerRouters(group); err != nil {
+					return fmt.Errorf("unable to register routers of imported module `%s`. Error: %w", module.name, err)
+				}
+			}
+		}
+
+	}
+	return nil
+}
+
+func (m *Module) IsRoot() bool {
+	return m.parent == nil
 }
 
 // Serve the application at the specified address/port and listen for OS
 // interrupt and kill signals and will attempt to stop the application
 // gracefully.
 func (m *Module) Serve() error {
-	r, err := m.Router()
-	if err != nil {
-		return err
+
+	if m.router == nil {
+		return fmt.Errorf("unable to serve module `%s`. Error: %w", m.name, errors.New("http router is not initialized"))
 	}
 
 	// create http server
 	srv := http.Server{
-		Handler: r,
+		Handler: m.router,
 	}
 
 	// make interrupt signal channel
@@ -182,130 +265,4 @@ func (m *Module) Serve() error {
 	//start accepting incomming requests
 	return srv.ListenAndServe()
 
-}
-
-// Path returns module path
-func (m *Module) Path() string {
-	if m.path != "" {
-		return m.path
-	}
-
-	if m.parent == nil {
-		// root module by default will have / path
-		m.path = "/"
-	} else {
-		// try to guess module path based on the module name
-		m.path = strings.Split(m.name, ".")[1]
-		m.path = strings.TrimSuffix(m.path, m.options.ModuleSuffix)
-		m.path = toSnakeCase(m.path)
-		m.path = strings.ToLower(m.path)
-		m.path = fmt.Sprintf("/%s", m.path)
-	}
-
-	// override module path if ModulePather interface is implemented
-	if val, ok := m.factory.(ModulePather); ok {
-		m.path = val.Path()
-	}
-
-	return m.path
-}
-
-// Router gets router, if router is not initialized router is initialized
-func (m *Module) Router() (*Router, error) {
-	if m.router != nil {
-		return m.router, nil
-	}
-	// check if module provides router
-	if v, ok := m.factory.(ModuleRouter); ok {
-		m.router = v.Router()
-	}
-
-	// ensure default router
-	if m.router == nil {
-		m.router = NewRouterWithOptions(m.options.RouterOptions)
-	}
-
-	//check if module provides middlewares
-	if v, ok := m.factory.(ModuleMiddleware); ok {
-		m.router.Use(v.Middlewares()...)
-	}
-
-	//register controllers for current module
-	if err := m.registerControllers("", m.router); err != nil {
-		return nil, err
-	}
-
-	// register controllers from all imported modules
-	for _, module := range m.imports {
-		if err := module.registerControllers(m.Path(), m.router); err != nil {
-			return nil, err
-		}
-	}
-
-	return m.router, nil
-}
-
-func (m *Module) registerControllers(parent string, r *Router) error {
-	if v, ok := m.factory.(ModuleController); ok {
-		for _, ctrlP := range v.Controllers() {
-
-			ctrl, err := m.container.Provide(ctrlP)
-			if err != nil {
-				return fmt.Errorf("module %s can not invoke controller constructor. Error: %w", m.name, err)
-			}
-
-			// get controller type
-			typ := reflect.TypeOf(ctrl)
-			//get controller name
-			name := typ.String()
-
-			// check if controller is pointer
-			if typ.Kind() != reflect.Ptr {
-				return fmt.Errorf("controller %s in module %s has to be pointer", name, m.name)
-			}
-			// remove * from controller name
-			name = name[1:]
-
-			// check if controller follows naming convention
-			if !strings.HasSuffix(name, m.options.ControllerSuffix) {
-				return fmt.Errorf("controller %s in module %s does not follow naming convention", name, m.name)
-			}
-
-			// initialize controller
-			if val, ok := ctrl.(ModuleIniter); ok {
-				if err := val.Init(); err != nil {
-					return fmt.Errorf("unable to initialize controller %s in module %s. Error: %w", name, m.name, err)
-				}
-			}
-
-			// define controller path
-			path := "/"
-			ctrlName := strings.Split(name, ".")[1]
-
-			if ctrlName != m.options.ControllerIndex {
-				path = toSnakeCase(ctrlName)
-				path = fmt.Sprintf("/%s", path)
-				path = strings.ToLower(path)
-			}
-
-			// assign custom path is controller implements Pather interface
-			if val, ok := ctrl.(ModulePather); ok {
-				path = val.Path()
-			}
-
-			if !strings.HasPrefix(path, "/") {
-				return fmt.Errorf("unable to register controller %s in module %s: controller path has to start with `/` ", name, m.name)
-			}
-
-			if val, ok := ctrl.(ControllerRouter); ok {
-				rPath := fmt.Sprintf("%s%s", parent, m.Path())
-				gRouter := r.Group(rPath)
-				val.Routes(gRouter)
-			} else {
-				return fmt.Errorf("unable to register controller %s in module %s: controller does not implement ControllerRouter interface", name, m.name)
-			}
-		}
-
-	}
-	return nil
 }
