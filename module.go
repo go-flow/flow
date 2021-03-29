@@ -15,44 +15,6 @@ import (
 	"github.com/go-flow/flow/di"
 )
 
-// ModuleFactory interface for creating flow.Module
-type ModuleFactory interface {
-
-	// ProvideImports returns list of instance providers for module dependecies
-	// This method is used to register all module dependecies
-	// eg. logging, db connection,....
-	// all dependecies that are provided in this method
-	// will be available to all modules imported by the factory
-	ProvideImports() []Provider
-
-	// ProvideExports returns list of instance providers for
-	// functionalities that module will export.
-	// Exported functionalities will be available to other modules that
-	// import module created by the Factory
-	ProvideExports() []Provider
-
-	// ProvideModules returns list of instance providers
-	// for modules that current module depends on
-	ProvideModules() []Provider
-
-	// ProvideRouters returns list of instance providers for module routers.
-	// Module routers are used for http routing
-	ProvideRouters() []Provider
-}
-
-// ModuleOptioner interface is used for providing Application Options
-// This interface is used only for root module or AppModule
-type ModuleOptioner interface {
-	Options() Options
-}
-
-type RouterFactory interface {
-	Path() string
-	Middlewares() []MiddlewareHandlerFunc
-	ProvideHandlers() []Provider
-	RegisterSubRouters() bool
-}
-
 // Module struct
 type Module struct {
 	factory   ModuleFactory
@@ -229,6 +191,12 @@ func (m *Module) Serve() error {
 		return fmt.Errorf("unable to serve module `%s`. Error: %w", m.name, errors.New("http router is not initialized"))
 	}
 
+	if s, ok := m.factory.(ModuleStarter); ok {
+		if err := s.Start(); err != nil {
+			return fmt.Errorf("unable to start module `%s`. Error: %w", m.name, err)
+		}
+	}
+
 	// create http server
 	srv := http.Server{
 		Handler: m.router,
@@ -241,6 +209,11 @@ func (m *Module) Serve() error {
 	// listen for interrupt signals
 	go func() {
 		<-c
+
+		if s, ok := m.factory.(ModuleStopper); ok {
+			s.Stop()
+		}
+
 		if err := srv.Shutdown(context.Background()); err != nil {
 			panic(fmt.Errorf("unable to gracefully shutdown HTTP.Server. Error: %w", err))
 		}
