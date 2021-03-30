@@ -213,6 +213,7 @@ func (r *Router) Handle(method, path string, handler HandlerFunc, middlewares ..
 	}
 
 	route := &Route{
+		router:  r,
 		Method:  method,
 		Path:    path,
 		Mws:     r.mws.Clone(middlewares...),
@@ -311,12 +312,22 @@ func (r *Router) dispatchRequest(w http.ResponseWriter, req *http.Request) Respo
 	if req.Method == http.MethodOptions && r.HandleOptions {
 		if allow := r.allowed(path, http.MethodOptions); allow != "" {
 
-			headers := map[string]string{"Allow": allow}
+			// Add request method to list of allowed methods
+			//allow = append(allow, http.MethodOptions)
+
+			// get first allowed method
+			method := strings.Split(allow, ",")[0]
+
+			// get
+			route, _, _ := r.trees[method].getValue(path, nil)
+
+			headers := map[string]string{"Allow": http.MethodOptions + "," + allow}
 
 			r := &Route{
+				router: route.router,
 				Method: req.Method,
 				Path:   path,
-				Mws:    r.mws,
+				Mws:    route.router.mws, // assign router level routes
 				Handler: func(r *http.Request) Response {
 					return ResponseHeader(http.StatusNoContent, headers)
 				},
@@ -382,8 +393,6 @@ func (r *Router) allowed(path, reqMethod string) (allow string) {
 	}
 
 	if len(allowed) > 0 {
-		// Add request method to list of allowed methods
-		allowed = append(allowed, http.MethodOptions)
 
 		// Sort allowed methods.
 		// sort.Strings(allowed) unfortunately causes unnecessary allocations

@@ -6,9 +6,9 @@ import (
 
 // Route structure
 type Route struct {
-	Method string
-	Path   string
-
+	router  *Router
+	Method  string
+	Path    string
 	Mws     *MiddlewareStack
 	Handler HandlerFunc
 }
