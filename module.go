@@ -125,7 +125,7 @@ func NewModule(factory ModuleFactory, container di.Container, parent *Module) (*
 		}
 
 		module.router = NewRouterWithOptions(module.options.RouterOptions)
-		if err := module.registerRouters(module.router); err != nil {
+		if err := module.registerRouters(nil); err != nil {
 			return nil, fmt.Errorf("unable to register routers for module `%s`. Error: %w", module.name, err)
 		}
 	}
@@ -133,7 +133,7 @@ func NewModule(factory ModuleFactory, container di.Container, parent *Module) (*
 	return module, nil
 }
 
-func (m *Module) registerRouters(r *Router) error {
+func (m *Module) registerRouters(parent *Router) error {
 
 	// initialize module routers
 	for _, p := range m.factory.ProvideRouters() {
@@ -148,7 +148,14 @@ func (m *Module) registerRouters(r *Router) error {
 		if !ok {
 			return fmt.Errorf("unable to register router provider for module `%s`. Error: %w", m.name, errors.New("provided constructor did not create instance of RouterFactory interface"))
 		}
-		group := r.Group(rf.Path(), rf.Middlewares()...)
+
+		group := parent.Group(rf.Path(), rf.Middlewares()...)
+
+		// for root modules create root routers with shared tree
+		if m.IsRoot() {
+			group.parent = nil
+			group.root = true
+		}
 
 		// get all action handlers
 		for _, p := range rf.ProvideHandlers() {

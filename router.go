@@ -312,22 +312,19 @@ func (r *Router) dispatchRequest(w http.ResponseWriter, req *http.Request) Respo
 	if req.Method == http.MethodOptions && r.HandleOptions {
 		if allow := r.allowed(path, http.MethodOptions); allow != "" {
 
+			allowed := strings.Split(allow, ",")
+
+			route, _, _ := r.trees[allowed[0]].getValue(path, nil)
+
 			// Add request method to list of allowed methods
-			//allow = append(allow, http.MethodOptions)
+			allowed = append(allowed, http.MethodOptions)
 
-			// get first allowed method
-			method := strings.Split(allow, ",")[0]
-
-			// get
-			route, _, _ := r.trees[method].getValue(path, nil)
-
-			headers := map[string]string{"Allow": http.MethodOptions + "," + allow}
+			headers := map[string]string{"Allow": strings.Join(allowed, ",")}
 
 			r := &Route{
-				router: route.router,
 				Method: req.Method,
 				Path:   path,
-				Mws:    route.router.mws, // assign router level routes
+				Mws:    route.router.findRoot().mws,
 				Handler: func(r *http.Request) Response {
 					return ResponseHeader(http.StatusNoContent, headers)
 				},
@@ -344,6 +341,14 @@ func (r *Router) dispatchRequest(w http.ResponseWriter, req *http.Request) Respo
 	}
 
 	return ResponseError(http.StatusNotFound, errors.New(r.Body404))
+}
+
+func (r *Router) findRoot() *Router {
+	if r.root {
+		return r
+	}
+
+	return r.parent
 }
 
 func (r *Router) updateParams(path string) {
@@ -393,7 +398,6 @@ func (r *Router) allowed(path, reqMethod string) (allow string) {
 	}
 
 	if len(allowed) > 0 {
-
 		// Sort allowed methods.
 		// sort.Strings(allowed) unfortunately causes unnecessary allocations
 		// due to allowed being moved to the heap and interface conversion

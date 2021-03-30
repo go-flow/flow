@@ -13,10 +13,6 @@ const (
 
 	default404Body = "404 page not found"
 	default405Body = "405 method not allowed"
-
-	defaultModuleSuffix     = "Module"
-	defaultControllerSuffix = "Controller"
-	defaultControllerIndex  = "Index"
 )
 
 // Options holds application configuration Options
@@ -54,14 +50,11 @@ func NewOptions() Options {
 			Body404:                default404Body,
 			Body405:                default405Body,
 		},
-		initialized:      true,
-		Env:              defaultEnv,
-		Name:             defaultName,
-		Addr:             defaultAddr,
-		Version:          defaultVersion,
-		ModuleSuffix:     defaultModuleSuffix,
-		ControllerSuffix: defaultControllerSuffix,
-		ControllerIndex:  defaultControllerIndex,
+		initialized: true,
+		Env:         defaultEnv,
+		Name:        defaultName,
+		Addr:        defaultAddr,
+		Version:     defaultVersion,
 	}
 
 	return opts
