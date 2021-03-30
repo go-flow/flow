@@ -220,7 +220,7 @@ func TestRouterOPTIONS(t *testing.T) {
 	router.ServeHTTP(w, r)
 	if !(w.Code == http.StatusNoContent) {
 		t.Errorf("OPTIONS handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	} else if allow := w.Header().Get("Allow"); allow != "OPTIONS, POST" {
+	} else if allow := w.Header().Get("Allow"); allow != "POST, OPTIONS" {
 		t.Error("unexpected Allow header value: " + allow)
 	}
 
@@ -230,7 +230,7 @@ func TestRouterOPTIONS(t *testing.T) {
 	router.ServeHTTP(w, r)
 	if !(w.Code == http.StatusNoContent) {
 		t.Errorf("OPTIONS handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	} else if allow := w.Header().Get("Allow"); allow != "OPTIONS, POST" {
+	} else if allow := w.Header().Get("Allow"); allow != "POST, OPTIONS" {
 		t.Error("unexpected Allow header value: " + allow)
 	}
 
@@ -274,7 +274,7 @@ func TestRouterNotAllowed(t *testing.T) {
 	router.ServeHTTP(w, r)
 	if !(w.Code == http.StatusMethodNotAllowed) {
 		t.Errorf("NotAllowed handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	} else if allow := w.Header().Get("Allow"); allow != "OPTIONS, POST" {
+	} else if allow := w.Header().Get("Allow"); allow != "POST" {
 		t.Error("unexpected Allow header value: " + allow)
 	}
 
@@ -288,7 +288,7 @@ func TestRouterNotAllowed(t *testing.T) {
 	router.ServeHTTP(w, r)
 	if !(w.Code == http.StatusMethodNotAllowed) {
 		t.Errorf("NotAllowed handling failed: Code=%d, Header=%v", w.Code, w.Header())
-	} else if allow := w.Header().Get("Allow"); allow != "DELETE, OPTIONS, POST" {
+	} else if allow := w.Header().Get("Allow"); allow != "DELETE, POST" {
 		t.Error("unexpected Allow header value: " + allow)
 	}
 

@@ -316,15 +316,20 @@ func (r *Router) dispatchRequest(w http.ResponseWriter, req *http.Request) Respo
 
 			route, _, _ := r.trees[allowed[0]].getValue(path, nil)
 
+			mws := r.findRoot().mws
+			if route != nil {
+				mws = route.router.findRoot().mws
+			}
+
 			// Add request method to list of allowed methods
 			allowed = append(allowed, http.MethodOptions)
 
-			headers := map[string]string{"Allow": strings.Join(allowed, ",")}
+			headers := map[string]string{"Allow": strings.Join(allowed, ", ")}
 
 			r := &Route{
 				Method: req.Method,
 				Path:   path,
-				Mws:    route.router.findRoot().mws,
+				Mws:    mws,
 				Handler: func(r *http.Request) Response {
 					return ResponseHeader(http.StatusNoContent, headers)
 				},
@@ -347,8 +352,11 @@ func (r *Router) findRoot() *Router {
 	if r.root {
 		return r
 	}
+	if r.parent != nil {
+		return r.parent
+	}
 
-	return r.parent
+	return r
 }
 
 func (r *Router) updateParams(path string) {
