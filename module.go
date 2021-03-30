@@ -153,7 +153,6 @@ func (m *Module) registerRouters(parent *Router) error {
 
 		// for root modules create root routers with shared tree
 		if m.IsRoot() {
-			group.parent = nil
 			group.root = true
 		}
 
