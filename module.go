@@ -125,7 +125,7 @@ func NewModule(factory ModuleFactory, container di.Container, parent *Module) (*
 		}
 
 		module.router = NewRouterWithOptions(module.options.RouterOptions)
-		if err := module.registerRouters(nil); err != nil {
+		if err := module.registerRouters(module.router); err != nil {
 			return nil, fmt.Errorf("unable to register routers for module `%s`. Error: %w", module.name, err)
 		}
 	}
