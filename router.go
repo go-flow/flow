@@ -247,20 +247,8 @@ func (r *Router) Lookup(method, path string) (*Route, Params, bool) {
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	defer func() {
-		if err := recover(); err != nil {
-
-			res := ResponseError(http.StatusInternalServerError, fmt.Errorf("panic: %w", err))
-			if e := res.Handle(w, req); e != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(fmt.Sprintf("Response error: %v", e)))
-			}
-		}
-	}()
 	res := r.dispatchRequest(w, req)
 	if res == nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Response can not be nil"))
 		return
 	}
 
