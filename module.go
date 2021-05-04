@@ -110,6 +110,9 @@ func NewModule(factory ModuleFactory, container di.Container, parent *Module) (*
 		}
 	}
 
+	// ad the di injector to the container
+	module.container.Add(&module.container)
+
 	if module.IsRoot() {
 		module.container.InjectDeps(factory)
 
