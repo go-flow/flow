@@ -70,3 +70,10 @@ func Remove(value interface{}, n int) bool {
 func Has(value interface{}) bool {
 	return Global().Has(value)
 }
+
+// Invoke calls constructor function and invokes it with
+// injected values from container to constructor parameters
+func Invoke(c interface{}) (interface{}, error) {
+	g := Global()
+	return g.Invoke(c)
+}

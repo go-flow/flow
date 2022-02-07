@@ -17,7 +17,7 @@ func NewContainer() Container {
 // Clone returns a copy of the current container value
 func (c Container) Clone() Container {
 	if n := len(c); n > 0 {
-		values := make(Container, n, n)
+		values := make(Container, n)
 		copy(values, c)
 		return values
 	}
@@ -71,9 +71,9 @@ func (c Container) Has(value interface{}) bool {
 	return c.valueTypeExists(reflect.TypeOf(value))
 }
 
-// Inject registers constructor function and
-// invokes it with injected values from container to constructor
-func (c *Container) Inject(constructor interface{}) (interface{}, error) {
+// Invoke calls constructor function and invokes it with
+// injected values from container to constructor parameters
+func (c *Container) Invoke(constructor interface{}) (interface{}, error) {
 
 	typ := reflect.TypeOf(constructor)
 	if typ == nil {

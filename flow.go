@@ -1,7 +1,7 @@
 package flow
 
 // Bootstrap creates flow Module instance for given factory object
-func Bootstrap(mf ModuleFactory) (*Module, error) {
-	module, err := NewModule(mf, nil)
+func Bootstrap(factory interface{}) (*Module, error) {
+	module, err := NewModule(factory, nil)
 	return module, err
 }

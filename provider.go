@@ -4,20 +4,20 @@ package flow
 // The Provider instance is used for constructor functions where Dependency injection machanism is decoupled
 // Provide method is used to provide constructor value with injected dependecies from given injector
 type Provider interface {
-	Provide(injector Injector) (interface{}, error)
+	Provide(in Invoker) (interface{}, error)
 }
 
 type valueProvider struct {
 	c interface{}
 }
 
-func (vp *valueProvider) Provide(injector Injector) (interface{}, error) {
-	return injector.Inject(vp.c)
+func (vp *valueProvider) Provide(in Invoker) (interface{}, error) {
+	return in.Invoke(vp.c)
 }
 
-// NewProvider creates Dependency Injection value provider for given constructor
-func NewProvider(constructor interface{}) Provider {
+// NewValueProvider creates Dependency Injection value provider for given constructor
+func NewValueProvider(c interface{}) Provider {
 	return &valueProvider{
-		c: constructor,
+		c: c,
 	}
 }
