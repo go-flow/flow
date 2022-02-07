@@ -31,9 +31,6 @@ Github pages link page comming soon
 Please make sure to read the [Issue Reporting Checklist](https://github.com/go-flow/flow/blob/master/CONTRIBUTING.md#-submitting-an-issue) before opening an issue. Issues not conforming to the guideliness may be closed immediately.
 
 
-## Support
-
-Flow is an MIT-licensed open source project. It can grow thanks to the [Ministry of Programming](https://mop.ba) and amazing team.
 
 ## License
 
