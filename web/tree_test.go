@@ -13,21 +13,11 @@ import (
 	"testing"
 )
 
-// func printChildren(n *node, prefix string) {
-// 	fmt.Printf(" %02d %s%s[%d] %v %t %d \r\n", n.priority, prefix, n.path, len(n.children), n.handle, n.wildChild, n.nType)
-// 	for l := len(n.path); l > 0; l-- {
-// 		prefix += " "
-// 	}
-// 	for _, child := range n.children {
-// 		printChildren(child, prefix)
-// 	}
-// }
-
 // Used as a workaround since we can't compare functions or their addresses
 var fakeHandlerValue string
 
 func fakeHandler(val string) HandlerFunc {
-	return func(*http.Request) Response {
+	return func(*http.Request, Params) Response {
 		fakeHandlerValue = val
 		return ResponseText(200, "test")
 	}
@@ -58,7 +48,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests) {
 			t.Errorf("handle mismatch for route '%s': Expected nil handle", request.path)
 		default:
 			//handler(nil, nil, nil)
-			handler.HandleRequest(nil, nil)
+			handler.HandleRequest(nil, nil, nil)
 			if fakeHandlerValue != request.route {
 				t.Errorf("handle mismatch for route '%s': Wrong handle (%s != %s)", request.path, fakeHandlerValue, request.route)
 			}

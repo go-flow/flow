@@ -6,38 +6,15 @@ import (
 	"reflect"
 
 	"github.com/go-flow/flow/v3/di"
+	"github.com/go-flow/flow/v3/web"
 )
-
-type ImportsProvider interface {
-	// ProvideImports returns list of instance providers for module dependecies
-	// This method is used to register all module dependecies
-	// eg. logging, db connection,....
-	// all dependecies that are provided in this method
-	// will be available to all modules imported by the factory
-	ProvideImports() []Provider
-}
-
-type ExportsProvider interface {
-
-	// ProvideExports returns list of instance providers for
-	// functionalities that module will export.
-	// Exported functionalities will be available to other modules that
-	// import module created by the Factory
-	ProvideExports() []Provider
-}
-
-type ModulesProvider interface {
-
-	// ProvideModules returns list of instance providers
-	// for modules that current module depends on
-	ProvideModules() []Provider
-}
 
 type Module struct {
 	name      string
 	factory   interface{}
 	container di.Container
 	parent    *Module
+	modules   []*Module
 }
 
 // NewModule creates new module instance
@@ -110,6 +87,7 @@ func NewModule(factory interface{}, parent *Module) (*Module, error) {
 				}
 			}
 
+			module.modules = append(module.modules, mod)
 		}
 	}
 
@@ -127,4 +105,51 @@ func NewModule(factory interface{}, parent *Module) (*Module, error) {
 // Factory returns factory value
 func (m *Module) Factory() interface{} {
 	return m.factory
+}
+
+func (m *Module) registerRouters(parent *web.Router) error {
+	rp, ok := m.factory.(RouterProvider)
+	if !ok {
+		return nil
+	}
+
+	for _, provider := range rp.ProvideRouters() {
+		val, err := provider.Provide(&m.container)
+		if err != nil {
+			return fmt.Errorf("unable to register router provider for module  `%s`. Error: %w", m.name, err)
+		}
+
+		rf, ok := val.(RouterFactory)
+		if !ok {
+			return fmt.Errorf("unable to register router provider for module `%s`. Error: %w", m.name, errors.New("provided constructor did not create instance of RouterFactory interface"))
+		}
+
+		router := parent.Group(rf.Path(), rf.Middlewares()...)
+
+		for _, p := range rf.ProvideHandlers() {
+			val, err = p.Provide(&m.container)
+			if err != nil {
+				return fmt.Errorf("unable to register action handler for module  `%s`. Error: %w", m.name, err)
+			}
+
+			handler, ok := val.(ActionHandler)
+			if !ok {
+				return fmt.Errorf("unable to register action handler for module  `%s`. Error: %w", m.name, errors.New("provided constructor did not create instance of ActionHandler interface"))
+			}
+
+			router.Handle(handler.Method(), handler.Path(), handler.Handle, handler.Middlewares()...)
+		}
+
+		// check if sub routers should be registered for given router
+		if rf.RegisterSubRouters() {
+			for _, module := range m.modules {
+				if err := module.registerRouters(router); err != nil {
+					return fmt.Errorf("unable to register routers of imported module `%s`. Error: %w", module.name, err)
+				}
+			}
+		}
+	}
+
+	return nil
+
 }

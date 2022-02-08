@@ -16,13 +16,13 @@ type Route struct {
 type Routes []Route
 
 // HandleRequest handles http request. It executes all route middlewares and action handler
-func (rt *Route) HandleRequest(w http.ResponseWriter, r *http.Request) Response {
+func (rt *Route) HandleRequest(w http.ResponseWriter, r *http.Request, ps Params) Response {
 	if rt.Mws == nil {
-		return rt.Handler(r)
+		return rt.Handler(r, ps)
 	}
 	// define last handler in chain
 	h := func(_ http.ResponseWriter, r *http.Request) Response {
-		return rt.Handler(r)
+		return rt.Handler(r, ps)
 	}
 
 	// loop through middlewares and chain calls
